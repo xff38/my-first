@@ -59,6 +59,8 @@ function build(opts) {
   html = banner + '\n' + html;
 
   fs.writeFileSync(out, html, 'utf8');
+  /* GitHub Pages 入口：与交付物同内容的 index.html（仓库根目录） */
+  fs.writeFileSync(path.join(ROOT, 'index.html'), html, 'utf8');
   return { out, version, size: Buffer.byteLength(html, 'utf8'), included: JS_FILES.filter(f => fs.existsSync(path.join(SRC, f))) };
 }
 
