@@ -1,0 +1,4275 @@
+<!-- 我的工作生活APP · 单文件本地应用 · 版本 test · 构建于 2026-11-24 13:11:01 · 零外部依赖，无任何网络请求 -->
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的工作生活</title>
+<style>
+/* ============ 基础与主题变量 ============ */
+:root {
+  --sidebar-w: 200px;
+  --sidebar-w-collapsed: 56px;
+  --topbar-h: 48px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  /* 模块主题色 */
+  --c-home: #4f7cff;
+  --c-plan: #ff8c42;
+  --c-media: #e85d9a;
+  --c-dev: #22a06b;
+  --c-consult: #d9a514;
+  --c-study: #7a5cff;
+  --c-diet: #2bb3c0;
+  --c-fun: #f2555a;
+  --c-set: #8a93a6;
+}
+html[data-theme="light"] {
+  --bg: #f4f6fa;
+  --bg-card: #ffffff;
+  --bg-soft: #eef1f6;
+  --bg-hover: #e8ecf4;
+  --text: #23283a;
+  --text-soft: #6b7386;
+  --border: #dde3ee;
+  --primary: #4f7cff;
+  --primary-text: #ffffff;
+  --danger: #e5484d;
+  --warn-bg: #fff4d6;
+  --warn-border: #f0d48a;
+  --error-bg: #ffe0e0;
+  --error-border: #f2a6a8;
+  --ok: #22a06b;
+  --shadow: 0 1px 3px rgba(20, 30, 60, .08), 0 4px 16px rgba(20, 30, 60, .06);
+}
+html[data-theme="dark"] {
+  --bg: #16181f;
+  --bg-card: #1f222c;
+  --bg-soft: #262a36;
+  --bg-hover: #2e3342;
+  --text: #e7e9f0;
+  --text-soft: #9aa1b3;
+  --border: #343a4a;
+  --primary: #6b91ff;
+  --primary-text: #10131c;
+  --danger: #ff6369;
+  --warn-bg: #3a3220;
+  --warn-border: #6b5a2e;
+  --error-bg: #43262a;
+  --error-border: #7c3a40;
+  --ok: #37b580;
+  --shadow: 0 1px 3px rgba(0, 0, 0, .4), 0 4px 16px rgba(0, 0, 0, .3);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+}
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; font-size: 14px; color: var(--text); }
+.spacer { flex: 1; }
+
+/* ============ 横幅 ============ */
+.banner {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  padding: 8px 16px; font-size: 13px;
+}
+.banner-warn { background: var(--warn-bg); border-bottom: 1px solid var(--warn-border); }
+.banner-error { background: var(--error-bg); border-bottom: 1px solid var(--error-border); }
+
+/* ============ 布局 ============ */
+#layout { display: flex; height: 100vh; }
+body.has-banner #layout { height: calc(100vh - 35px); }
+
+#sidebar {
+  width: var(--sidebar-w); flex: none; display: flex; flex-direction: column;
+  background: var(--bg-card); border-right: 1px solid var(--border);
+  transition: width .15s ease;
+}
+#sidebar-head {
+  height: var(--topbar-h); display: flex; align-items: center; gap: 8px;
+  padding: 0 14px; border-bottom: 1px solid var(--border);
+  font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden;
+}
+#nav { flex: 1; overflow-y: auto; padding: 8px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; margin-bottom: 2px; border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); font-size: 14px; text-align: left;
+  white-space: nowrap; overflow: hidden;
+}
+.nav-item:hover { background: var(--bg-hover); }
+.nav-item.active { background: var(--bg-soft); font-weight: 600; }
+.nav-item .nav-icon { flex: none; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
+.nav-item .nav-icon svg { width: 18px; height: 18px; }
+.nav-item.active .nav-label { color: var(--mod-color, var(--primary)); }
+#sidebar-toggle { margin: 8px; }
+body.sidebar-collapsed #sidebar { width: var(--sidebar-w-collapsed); }
+body.sidebar-collapsed #app-name,
+body.sidebar-collapsed .nav-label { display: none; }
+body.sidebar-collapsed .nav-item { justify-content: center; padding: 9px 0; }
+body.sidebar-collapsed #sidebar-head { justify-content: center; padding: 0; }
+
+#main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#topbar {
+  height: var(--topbar-h); flex: none; display: flex; align-items: center; gap: 12px;
+  padding: 0 16px; background: var(--bg-card); border-bottom: 1px solid var(--border);
+}
+#top-date { font-size: 13px; color: var(--text-soft); }
+.save-state { font-size: 12px; color: var(--text-soft); min-width: 64px; text-align: right; }
+.save-state.ok { color: var(--ok); }
+.save-state.err { color: var(--danger); font-weight: 600; }
+.file-state {
+  border: 1px solid var(--border); background: var(--bg-soft); border-radius: 999px;
+  padding: 3px 12px; font-size: 12px; color: var(--text-soft);
+}
+.file-state-on { color: var(--ok); border-color: var(--ok); }
+.file-state-off { color: #b58a00; border-color: var(--warn-border); background: var(--warn-bg); }
+html[data-theme="dark"] .file-state-off { color: #e8c766; }
+
+#view { flex: 1; overflow-y: auto; padding: 20px 24px; outline: none; }
+
+/* ============ 通用基础件 ============ */
+.btn {
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text);
+  border-radius: var(--radius-sm); padding: 7px 14px; font-size: 13px;
+}
+.btn:hover { background: var(--bg-hover); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+.btn-primary:hover { filter: brightness(1.06); background: var(--primary); }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger:hover { filter: brightness(1.08); background: var(--danger); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--bg-hover); }
+.btn-small { padding: 3px 10px; font-size: 12px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px;
+}
+.grid { display: grid; gap: 14px; }
+.row { display: flex; gap: 12px; align-items: center; }
+.muted { color: var(--text-soft); }
+.small { font-size: 12px; }
+.mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; }
+.page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.page-sub { color: var(--text-soft); font-size: 13px; margin-bottom: 16px; }
+.section-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; }
+
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  font-size: 12px; background: var(--bg-soft); color: var(--text-soft);
+  border: 1px solid var(--border); cursor: default;
+}
+.tag.clickable { cursor: pointer; }
+.tag-on { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
+
+.input, .textarea, .select {
+  width: 100%; border: 1px solid var(--border); background: var(--bg-card);
+  border-radius: var(--radius-sm); padding: 7px 10px; color: var(--text);
+}
+.input:focus, .textarea:focus, .select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+.input.invalid, .textarea.invalid { border-color: var(--danger); }
+.field-error { color: var(--danger); font-size: 12px; margin-top: 3px; min-height: 14px; }
+.textarea { resize: vertical; min-height: 64px; }
+
+table.tbl { width: 100%; border-collapse: collapse; }
+.tbl th, .tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 13px; }
+.tbl th { color: var(--text-soft); font-weight: 600; background: var(--bg-soft); }
+.tbl tr:hover td { background: var(--bg-soft); }
+
+.empty-state {
+  text-align: center; color: var(--text-soft); padding: 36px 12px;
+  border: 1.5px dashed var(--border); border-radius: var(--radius); background: var(--bg-card);
+}
+.empty-state .empty-icon { font-size: 30px; margin-bottom: 8px; }
+.empty-state .btn { margin-top: 12px; }
+
+/* 标签页 */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tab-btn {
+  border: none; background: transparent; color: var(--text-soft);
+  padding: 9px 16px; font-size: 14px; border-bottom: 2.5px solid transparent; margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--mod-color, var(--primary)); border-bottom-color: var(--mod-color, var(--primary)); font-weight: 600; }
+
+/* ============ 弹窗 ============ */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(10, 14, 26, .45);
+  display: flex; align-items: flex-start; justify-content: center; z-index: 100;
+  overflow-y: auto; padding: 6vh 16px 16px;
+}
+.modal {
+  background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow);
+  width: 460px; max-width: 100%; padding: 20px;
+}
+.modal.wide { width: 640px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-size: 13px; color: var(--text-soft); margin-bottom: 5px; }
+.form-row .required::after { content: " *"; color: var(--danger); }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+
+/* toast */
+#toast-root { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  background: var(--text); color: var(--bg-card); padding: 8px 18px;
+  border-radius: 999px; font-size: 13px; box-shadow: var(--shadow);
+  animation: toast-in .18s ease;
+}
+.toast.toast-err { background: var(--danger); color: #fff; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; } }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-soft); }
+
+</style>
+</head>
+<body>
+<div id="compat-banner" class="banner banner-error" hidden>
+  当前浏览器不支持本地数据文件读写（需要 Edge 或 Chrome）。可使用「数据与设置」中的导出/导入方式管理数据。
+</div>
+<div id="net-banner" class="banner banner-warn" hidden>
+  <span>⚠ 尚未连接数据文件，修改将暂存浏览器</span>
+  <button id="net-banner-btn" class="btn btn-small btn-primary">立即连接</button>
+</div>
+<div id="layout">
+  <aside id="sidebar">
+    <div id="sidebar-head">
+      <span id="logo">🗂️</span>
+      <span id="app-name">我的工作生活</span>
+    </div>
+    <nav id="nav"></nav>
+    <button id="sidebar-toggle" class="btn btn-ghost btn-small" title="收起/展开侧边栏">⇔</button>
+  </aside>
+  <div id="main">
+    <header id="topbar">
+      <span id="top-date"></span>
+      <span class="spacer"></span>
+      <span id="save-state" class="save-state" title="保存状态">—</span>
+      <button id="file-state" class="file-state file-state-off" title="数据文件状态">● 未连接</button>
+      <button id="theme-toggle" class="btn btn-ghost btn-small" title="切换深浅色主题">🌙</button>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<script>
+/* ==== js/00-util.js ==== */
+/* 00-util.js — 纯工具函数（无 DOM 依赖，可在 Node 中测试） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = {};
+
+  /* ---- ID ---- */
+  U.uid = function () {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  };
+
+  /* ---- 日期（一律本地时区，格式 YYYY-MM-DD） ---- */
+  U.pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+
+  U.toDateStr = function (d) {
+    return d.getFullYear() + '-' + U.pad2(d.getMonth() + 1) + '-' + U.pad2(d.getDate());
+  };
+
+  U.today = function () { return U.toDateStr(new Date()); };
+
+  U.parseDate = function (s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
+    return d;
+  };
+
+  U.isValidDateStr = function (s) { return U.parseDate(s) !== null; };
+
+  U.addDays = function (dateStr, n) {
+    var d = U.parseDate(dateStr);
+    if (!d) return null;
+    d.setDate(d.getDate() + n);
+    return U.toDateStr(d);
+  };
+
+  U.diffDays = function (a, b) { // b - a 的天数
+    var da = U.parseDate(a), db = U.parseDate(b);
+    if (!da || !db) return NaN;
+    return Math.round((db - da) / 86400000);
+  };
+
+  U.weekdayCN = function (dateStr) {
+    var d = U.parseDate(dateStr);
+    if (!d) return '';
+    return '日一二三四五六'.charAt(d.getDay());
+  };
+
+  /* 本周周一的日期 */
+  U.mondayOf = function (dateStr) {
+    var d = U.parseDate(dateStr);
+    if (!d) return null;
+    var wd = (d.getDay() + 6) % 7; // 周一=0
+    d.setDate(d.getDate() - wd);
+    return U.toDateStr(d);
+  };
+
+  U.monthOf = function (dateStr) { return (dateStr || '').slice(0, 7); }; // YYYY-MM
+
+  U.fmtDateCN = function (dateStr) {
+    var d = U.parseDate(dateStr);
+    if (!d) return dateStr || '';
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  };
+
+  U.greeting = function (hour) {
+    if (hour == null) hour = new Date().getHours();
+    if (hour < 6) return '夜深了';
+    if (hour < 9) return '早上好';
+    if (hour < 12) return '上午好';
+    if (hour < 14) return '中午好';
+    if (hour < 18) return '下午好';
+    return '晚上好';
+  };
+
+  /* ---- 时间 HH:MM <-> 分钟 ---- */
+  U.isValidTime = function (s) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(s || '');
+    return !!m && +m[1] <= 23 && +m[2] <= 59;
+  };
+  U.timeToMin = function (s) {
+    if (!U.isValidTime(s)) return NaN;
+    var p = s.split(':');
+    return (+p[0]) * 60 + (+p[1]);
+  };
+  U.minToTime = function (m) {
+    m = Math.max(0, Math.min(24 * 60, Math.round(m)));
+    return U.pad2(Math.floor(m / 60)) + ':' + U.pad2(m % 60);
+  };
+  U.fmtMinutes = function (mins) {
+    mins = Math.max(0, Math.round(mins || 0));
+    var h = Math.floor(mins / 60), m = mins % 60;
+    if (h && m) return h + ' 小时 ' + m + ' 分';
+    if (h) return h + ' 小时';
+    return m + ' 分钟';
+  };
+
+  /* ---- 数字/金额 ---- */
+  /* 严格解析：'12a' 这类脏输入视为非法（返回 dft），不做 parseFloat 的宽松前缀解析 */
+  U.toNum = function (v, dft) {
+    if (typeof v === 'number') return isFinite(v) ? v : (dft === undefined ? null : dft);
+    var s = String(v == null ? '' : v).trim();
+    if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(s)) return (dft === undefined ? null : dft);
+    var n = parseFloat(s);
+    return isFinite(n) ? n : (dft === undefined ? null : dft);
+  };
+  U.fmtMoney = function (n) {
+    n = U.toNum(n, 0);
+    return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  /* ---- 杂项 ---- */
+  U.clamp = function (v, lo, hi) { return Math.min(hi, Math.max(lo, v)); };
+
+  U.debounce = function (fn, ms) {
+    var t = null;
+    var wrapped = function () {
+      var args = arguments, self = this;
+      if (t) clearTimeout(t);
+      t = setTimeout(function () { t = null; fn.apply(self, args); }, ms);
+    };
+    wrapped.flush = function () { if (t) { clearTimeout(t); t = null; fn(); } };
+    return wrapped;
+  };
+
+  U.deepClone = function (o) { return JSON.parse(JSON.stringify(o)); };
+
+  U.esc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+
+  U.nl2br = function (s) { return U.esc(s).replace(/\n/g, '<br>'); };
+
+  /* 数组按 key 分组，保持出现顺序 */
+  U.groupBy = function (arr, keyFn) {
+    var map = new Map();
+    (arr || []).forEach(function (it) {
+      var k = keyFn(it);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(it);
+    });
+    return map;
+  };
+
+  U.sum = function (arr, fn) {
+    return (arr || []).reduce(function (a, b) { return a + (fn ? fn(b) : b); }, 0);
+  };
+
+  /* 备份文件名：我的数据-2026-11-13.json，冲突时加 -HHmmss */
+  U.backupFileName = function (baseName, dateStr, usedNames, now) {
+    now = now || new Date();
+    var stem = (baseName || '数据').replace(/\.json$/i, '');
+    var simple = stem + '-' + dateStr + '.json';
+    if (!usedNames || usedNames.indexOf(simple) === -1) return simple;
+    var t = U.pad2(now.getHours()) + U.pad2(now.getMinutes()) + U.pad2(now.getSeconds());
+    return stem + '-' + dateStr + '-' + t + '.json';
+  };
+
+  U.byDateDesc = function (a, b) { return (b.date || '').localeCompare(a.date || ''); };
+  U.byDateAsc = function (a, b) { return (a.date || '').localeCompare(b.date || ''); };
+
+  App.util = U;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/01-modules.js ==== */
+/* 01-modules.js — 模块注册表（导航顺序、名称、主题色、图标） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var svg = function (path, viewBox) {
+    return '<svg viewBox="' + (viewBox || '0 0 24 24') + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+  };
+
+  App.modules = [
+    { id: 'home',    name: '首页总览', color: '--c-home',    icon: svg('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>') },
+    { id: 'plan',    name: '今日计划', color: '--c-plan',    icon: svg('<rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M8 2.5v4M16 2.5v4M3 10h18M8.5 15l2 2 4-4.5"/>') },
+    { id: 'media',   name: '自媒体',   color: '--c-media',   icon: svg('<path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.8 6a8.5 8.5 0 0 1 0 12"/>') },
+    { id: 'dev',     name: '开发工作', color: '--c-dev',     icon: svg('<path d="m8 6-5 6 5 6M16 6l5 6-5 6M13.5 4l-3 16"/>') },
+    { id: 'consult', name: '咨询工作', color: '--c-consult', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M15 9.2c-.4-1-1.6-1.7-3-1.7-1.9 0-3.3 1-3.3 2.5 0 3 6.6 1.6 6.6 4.7 0 1.5-1.4 2.6-3.3 2.6-1.6 0-2.8-.7-3.2-1.9M12 5.5v13"/>') },
+    { id: 'study',   name: '学习计划', color: '--c-study',   icon: svg('<path d="M12 4 2.5 8.5 12 13l9.5-4.5L12 4z"/><path d="M6 10.7V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.3M21.5 8.5v5"/>') },
+    { id: 'diet',    name: '饮食计划', color: '--c-diet',    icon: svg('<path d="M4 3v8a3 3 0 0 0 3 3v7M7 3v7M10 3v7"/><path d="M17 3c-1.7 1.5-2.5 3.5-2.5 6 0 2 1 3 2.5 3.5V21"/>') },
+    { id: 'fun',     name: '游戏娱乐', color: '--c-fun',     icon: svg('<rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7 10.5v3M5.5 12h3M15.5 11.5h.01M18 13.5h.01"/>') },
+    { id: 'settings',name: '数据与设置',color: '--c-set',    icon: svg('<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.11a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.11a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.11a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.11a1.7 1.7 0 0 0-1.56 1z"/>') }
+  ];
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/10-schema.js ==== */
+/* 10-schema.js — 数据结构定义、默认值与 normalize（纯函数，可 Node 测试） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util;
+  var S = {};
+
+  S.APP_VERSION = 1;
+
+  S.DEFAULT_PLATFORMS = ['B站', '抖音', '小红书', '公众号', '视频号', 'YouTube'];
+  S.DEFAULT_RECIPE_TAGS = ['主食', '荤', '素', '汤', '外卖'];
+
+  /* 集合元数据：path -> 'array'（按 id 的数组）| 'map'（按日期/键的对象） */
+  S.COLLECTIONS = {
+    'memos': 'array',
+    'plan.events': 'array',
+    'plan.todos': 'array',
+    'plan.reviews': 'map',
+    'media.topics': 'array',
+    'media.schedule': 'array',
+    'media.stats': 'array',
+    'dev.projects': 'array',
+    'consult.incomes': 'array',
+    'study.goals': 'array',
+    'study.checkins': 'map',
+    'study.timetable': 'array',
+    'study.readings': 'array',
+    'diet.recipes': 'array',
+    'diet.meals': 'map',
+    'diet.records': 'map',
+    'diet.weights': 'array',
+    'fun.records': 'array',
+    'fun.weekly': 'array',
+    'fun.pool': 'array'
+  };
+
+  S.defaultData = function () {
+    return {
+      appVersion: S.APP_VERSION,
+      savedAt: null,
+      settings: {
+        theme: 'light',
+        sidebarCollapsed: false,
+        platforms: S.DEFAULT_PLATFORMS.slice(),
+        recipeTags: S.DEFAULT_RECIPE_TAGS.slice()
+      },
+      memos: [],
+      plan: { events: [], todos: [], reviews: {} },
+      media: { topics: [], schedule: [], stats: [] },
+      dev: { projects: [] },
+      consult: { incomes: [] },
+      study: { goals: [], checkins: {}, timetable: [], readings: [] },
+      diet: { recipes: [], meals: {}, records: {}, weights: [] },
+      fun: { records: [], weekly: [], pool: [] }
+    };
+  };
+
+  /* 路径读写：getPath({a:{b:1}}, 'a.b') === 1 */
+  S.getPath = function (obj, path) {
+    return path.split('.').reduce(function (o, k) { return (o == null ? o : o[k]); }, obj);
+  };
+  S.setPath = function (obj, path, value) {
+    var keys = path.split('.');
+    var last = keys.pop();
+    var target = keys.reduce(function (o, k) {
+      if (o[k] == null || typeof o[k] !== 'object') o[k] = {};
+      return o[k];
+    }, obj);
+    target[last] = value;
+  };
+  S.ensurePath = function (obj, path, dft) {
+    if (S.getPath(obj, path) == null) S.setPath(obj, path, dft);
+    return S.getPath(obj, path);
+  };
+
+  /* ---- 单条记录字段清洗（宽容：坏字段给默认值，不整条丢弃） ---- */
+  function str(v, dft) { return (typeof v === 'string' ? v : (v == null ? (dft || '') : String(v))); }
+  function bool(v, dft) { return (typeof v === 'boolean' ? v : (v == null ? !!dft : !!v)); }
+  function num(v, dft) { var n = U.toNum(v, null); return n === null ? (dft === undefined ? null : dft) : n; }
+  function dateOr(v, dft) { return U.isValidDateStr(v) ? v : (dft || null); }
+  function timeOr(v, dft) { return U.isValidTime(v) ? (v.length === 4 ? '0' + v : v) : (dft || null); }
+  function ensureId(rec) { if (!rec || typeof rec !== 'object') return null; if (!rec.id) rec.id = U.uid(); return rec; }
+
+  S.cleanRecord = function (path, rec) {
+    if (rec == null || typeof rec !== 'object') return null;
+    rec = Object.assign({}, rec);
+    ensureId(rec);
+    switch (path) {
+      case 'memos':
+        rec.text = str(rec.text); rec.pinned = bool(rec.pinned, false);
+        rec.createdAt = str(rec.createdAt) || new Date().toISOString();
+        if (!rec.text) return null;
+        break;
+      case 'plan.events':
+        rec.date = dateOr(rec.date, U.today()); rec.start = timeOr(rec.start, '09:00');
+        rec.end = timeOr(rec.end, '10:00'); rec.title = str(rec.title); rec.note = str(rec.note);
+        if (!rec.title) return null;
+        break;
+      case 'plan.todos':
+        rec.date = dateOr(rec.date, U.today()); rec.text = str(rec.text);
+        rec.priority = ['高', '中', '低'].indexOf(rec.priority) >= 0 ? rec.priority : '中';
+        rec.done = bool(rec.done, false);
+        rec.carried = bool(rec.carried, false);
+        rec.carriedFrom = dateOr(rec.carriedFrom, null);
+        rec.carriedId = rec.carriedId ? str(rec.carriedId) : null;
+        if (!rec.text) return null;
+        break;
+      case 'media.topics':
+        rec.title = str(rec.title); rec.desc = str(rec.desc); rec.note = str(rec.note);
+        rec.status = ['灵感', '制作中', '已发布', '已放弃'].indexOf(rec.status) >= 0 ? rec.status : '灵感';
+        rec.createdAt = str(rec.createdAt) || new Date().toISOString();
+        if (!rec.title) return null;
+        break;
+      case 'media.schedule':
+        rec.date = dateOr(rec.date, U.today()); rec.platform = str(rec.platform);
+        rec.title = str(rec.title);
+        rec.status = ['计划中', '已发布'].indexOf(rec.status) >= 0 ? rec.status : '计划中';
+        rec.topicId = rec.topicId == null ? null : str(rec.topicId);
+        if (!rec.title) return null;
+        break;
+      case 'media.stats':
+        rec.date = dateOr(rec.date, U.today()); rec.platform = str(rec.platform);
+        rec.views = num(rec.views, null); rec.likes = num(rec.likes, null); rec.fans = num(rec.fans, null);
+        if (!rec.platform) return null;
+        break;
+      case 'dev.projects':
+        rec.name = str(rec.name);
+        rec.status = ['未开始', '进行中', '暂停', '已完成'].indexOf(rec.status) >= 0 ? rec.status : '未开始';
+        rec.progress = U.clamp(Math.round(num(rec.progress, 0) || 0), 0, 100);
+        rec.nextStep = str(rec.nextStep); rec.note = str(rec.note);
+        rec.due = dateOr(rec.due, null);
+        rec.updated = str(rec.updated) || new Date().toISOString();
+        rec.logs = Array.isArray(rec.logs) ? rec.logs.filter(function (l) { return l && typeof l === 'object'; }).map(function (l) {
+          return { time: str(l.time) || new Date().toISOString(), text: str(l.text), auto: bool(l.auto, false) };
+        }) : [];
+        if (!rec.name) return null;
+        break;
+      case 'consult.incomes':
+        rec.date = dateOr(rec.date, U.today()); rec.client = str(rec.client); rec.desc = str(rec.desc);
+        rec.amount = num(rec.amount, 0) || 0; rec.received = bool(rec.received, false); rec.note = str(rec.note);
+        break;
+      case 'study.goals':
+        rec.title = str(rec.title); rec.due = dateOr(rec.due, null);
+        rec.subtasks = (Array.isArray(rec.subtasks) ? rec.subtasks : []).map(function (st) {
+          if (!st || typeof st !== 'object') return null;
+          return {
+            id: str(st.id) || U.uid(), text: str(st.text), done: bool(st.done, false), due: dateOr(st.due, null),
+            checks: (Array.isArray(st.checks) ? st.checks : []).map(function (c) {
+              return (c && typeof c === 'object') ? { text: str(c.text), done: bool(c.done, false) } : null;
+            }).filter(Boolean)
+          };
+        }).filter(function (st) { return st && st.text; });
+        if (!rec.title) return null;
+        break;
+      case 'study.timetable':
+        rec.weekday = U.clamp(Math.round(num(rec.weekday, 1) || 1), 1, 7);
+        rec.start = timeOr(rec.start, '19:00'); rec.end = timeOr(rec.end, '21:00');
+        rec.text = str(rec.text); rec.color = U.clamp(Math.round(num(rec.color, 0) || 0), 0, 7);
+        if (!rec.text) return null;
+        break;
+      case 'study.readings':
+        rec.name = str(rec.name);
+        rec.type = ['书籍', '论文', '课程'].indexOf(rec.type) >= 0 ? rec.type : '书籍';
+        rec.status = ['想读', '在读', '读完'].indexOf(rec.status) >= 0 ? rec.status : '想读';
+        rec.note = str(rec.note); rec.doneDate = dateOr(rec.doneDate, null);
+        if (!rec.name) return null;
+        break;
+      case 'diet.recipes':
+        rec.name = str(rec.name); rec.ingredients = str(rec.ingredients); rec.steps = str(rec.steps);
+        rec.tags = Array.isArray(rec.tags) ? rec.tags.map(function (t) { return str(t); }).filter(Boolean) : [];
+        if (!rec.name) return null;
+        break;
+      case 'diet.weights':
+        rec.date = dateOr(rec.date, U.today()); rec.kg = num(rec.kg, null); rec.bf = num(rec.bf, null);
+        if (rec.kg == null || rec.kg <= 0) return null;
+        break;
+      case 'fun.records':
+        rec.date = dateOr(rec.date, U.today()); rec.what = str(rec.what);
+        rec.minutes = Math.max(0, Math.round(num(rec.minutes, 0) || 0));
+        rec.mood = ['good', 'ok', 'bad'].indexOf(rec.mood) >= 0 ? rec.mood : null;
+        if (!rec.what) return null;
+        break;
+      case 'fun.weekly':
+        rec.weekday = U.clamp(Math.round(num(rec.weekday, 1) || 1), 1, 7);
+        rec.time = timeOr(rec.time, '20:00'); rec.what = str(rec.what);
+        if (!rec.what) return null;
+        break;
+      case 'fun.pool':
+        rec.text = str(rec.text);
+        if (!rec.text) return null;
+        break;
+      default:
+        break;
+    }
+    return rec;
+  };
+
+  /* map 型集合的值清洗（键为日期或特殊键） */
+  S.cleanMapValue = function (path, key, value) {
+    if (!U.isValidDateStr(key)) return undefined;
+    switch (path) {
+      case 'plan.reviews':
+        var rv = str(value, '');
+        return rv === '' ? undefined : rv; // 空回顾不落库
+      case 'study.checkins':
+        if (value == null || typeof value !== 'object') return undefined;
+        return { minutes: Math.max(0, Math.round(num(value.minutes, 0) || 0)), note: str(value.note) };
+      case 'diet.meals':
+        if (value == null || typeof value !== 'object') return undefined;
+        return { breakfast: str(value.breakfast), lunch: str(value.lunch), dinner: str(value.dinner) };
+      case 'diet.records':
+        if (value == null || typeof value !== 'object') return undefined;
+        var out = {};
+        ['breakfast', 'lunch', 'dinner'].forEach(function (m) {
+          var mv = (value[m] && typeof value[m] === 'object') ? value[m] : {};
+          out[m] = { actual: str(mv.actual), eaten: bool(mv.eaten, false) };
+        });
+        return out;
+      default:
+        return value;
+    }
+  };
+
+  /* ---- normalize：把任意外来数据（含残缺/损坏）补全为合法结构 ---- */
+  S.normalize = function (input) {
+    var data = S.defaultData();
+    if (input == null) return data;
+    if (typeof input === 'string') {
+      var t = input.trim();
+      if (!t) return data; // 空文件 → 初始结构
+      try { input = JSON.parse(t); } catch (e) { return null; } // 明确损坏 → null（调用方决定报错）
+    }
+    if (typeof input !== 'object' || Array.isArray(input)) return null;
+
+    /* settings */
+    if (input.settings && typeof input.settings === 'object') {
+      var st = input.settings;
+      data.settings.theme = (st.theme === 'dark' ? 'dark' : 'light');
+      data.settings.sidebarCollapsed = bool(st.sidebarCollapsed, false);
+      if (Array.isArray(st.platforms) && st.platforms.length) {
+        data.settings.platforms = st.platforms.map(function (p) { return str(p); }).filter(Boolean);
+      }
+      if (Array.isArray(st.recipeTags) && st.recipeTags.length) {
+        data.settings.recipeTags = st.recipeTags.map(function (p) { return str(p); }).filter(Boolean);
+      }
+    }
+    data.savedAt = str(input.savedAt, null);
+    data.appVersion = num(input.appVersion, S.APP_VERSION) || S.APP_VERSION;
+
+    /* 集合 */
+    Object.keys(S.COLLECTIONS).forEach(function (path) {
+      var kind = S.COLLECTIONS[path];
+      var src = S.getPath(input, path);
+      if (kind === 'array') {
+        var arr = Array.isArray(src) ? src : [];
+        var seen = {};
+        var out = [];
+        arr.forEach(function (rec) {
+          var c = S.cleanRecord(path, rec);
+          if (c && !seen[c.id]) { seen[c.id] = 1; out.push(c); }
+        });
+        S.setPath(data, path, out);
+      } else {
+        var map = {};
+        if (src && typeof src === 'object' && !Array.isArray(src)) {
+          Object.keys(src).forEach(function (k) {
+            var v = S.cleanMapValue(path, k, src[k]);
+            if (v !== undefined) map[k] = v;
+          });
+        }
+        S.setPath(data, path, map);
+      }
+    });
+    return data;
+  };
+
+  S.serialize = function (data) {
+    var copy = U.deepClone(data);
+    copy.savedAt = new Date().toISOString();
+    return JSON.stringify(copy, null, 1);
+  };
+
+  App.schema = S;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/20-logic.js ==== */
+/* 20-logic.js — 纯业务逻辑：oplog、合并、顺延、统计摘要、校验（可 Node 测试） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, S = App.schema;
+  var L = {};
+
+  /* ============ oplog：未连接期间的操作日志 ============ */
+  L.opUpsert = function (path, record, t) {
+    return { t: t || Date.now(), type: 'upsert', path: path, id: record.id, value: U.deepClone(record) };
+  };
+  L.opMapSet = function (path, key, value, t) {
+    return { t: t || Date.now(), type: 'mapset', path: path, id: key, value: (value && typeof value === 'object') ? U.deepClone(value) : value };
+  };
+  L.opRemove = function (path, id, t) {
+    return { t: t || Date.now(), type: 'remove', path: path, id: id };
+  };
+  L.opSetting = function (key, value, t) {
+    return { t: t || Date.now(), type: 'setting', key: key, value: (value && typeof value === 'object') ? U.deepClone(value) : value };
+  };
+
+  /* 应用单条 op 到 data（就地修改）。冲突规则：按 t 顺序重放，后到覆盖先到（本地新操作优先）。 */
+  L.applyOp = function (data, op) {
+    if (!op || !op.type) return false;
+    if (op.type === 'setting') {
+      data.settings = data.settings || {};
+      data.settings[op.key] = (op.value && typeof op.value === 'object') ? U.deepClone(op.value) : op.value;
+      return true;
+    }
+    var kind = S.COLLECTIONS[op.path];
+    if (!kind) return false;
+    if (op.type === 'upsert') {
+      if (kind === 'array') {
+        var arr = S.ensurePath(data, op.path, []);
+        var idx = -1;
+        for (var i = 0; i < arr.length; i++) if (arr[i] && arr[i].id === op.id) { idx = i; break; }
+        var cleaned = S.cleanRecord(op.path, op.value);
+        if (!cleaned) { if (idx >= 0) arr.splice(idx, 1); return true; }
+        cleaned.id = op.id || cleaned.id;
+        if (idx >= 0) arr[idx] = cleaned; else arr.push(cleaned);
+      } else {
+        var map = S.ensurePath(data, op.path, {});
+        var v = S.cleanMapValue(op.path, op.id, op.value);
+        if (v !== undefined) map[op.id] = v;
+      }
+      return true;
+    }
+    if (op.type === 'mapset') {
+      var map2 = S.ensurePath(data, op.path, {});
+      var v2 = S.cleanMapValue(op.path, op.id, op.value);
+      if (v2 !== undefined) map2[op.id] = v2;
+      else delete map2[op.id]; // 空值重放 = 删除键
+      return true;
+    }
+    if (op.type === 'remove') {
+      if (kind === 'array') {
+        var arr2 = S.ensurePath(data, op.path, []);
+        for (var j = arr2.length - 1; j >= 0; j--) if (arr2[j] && arr2[j].id === op.id) arr2.splice(j, 1);
+      } else {
+        var map3 = S.ensurePath(data, op.path, {});
+        delete map3[op.id];
+      }
+      return true;
+    }
+    return false;
+  };
+
+  /* 重放整个 oplog（按时间稳定排序） */
+  L.applyOplog = function (data, ops) {
+    var sorted = (ops || []).slice().sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+    var n = 0;
+    sorted.forEach(function (op) { if (L.applyOp(data, op)) n++; });
+    return n;
+  };
+
+  /* ============ 今日计划：未完成待办自动顺延 ============ */
+  /* 把 date < today 且未完成、未被顺延过的待办复制到 today（carriedFrom=来源日期，carriedId=链根 id 去重），
+     来源条目打 carried 标记（仍保留在历史日期，不算完成）。链式去重：同一根链每天最多顺延一条。
+     返回顺延条数。幂等：重复调用不会重复顺延。 */
+  L.carryOverTodos = function (data, today) {
+    var todos = data.plan.todos;
+    var existingCarried = {};
+    todos.forEach(function (t) {
+      if (t.date === today && t.carriedId) existingCarried[t.carriedId] = true;
+    });
+    var overdue = todos.filter(function (t) {
+      return !t.done && !t.carried && t.date && t.date < today;
+    }).sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); }); // 新日期优先
+    var added = 0;
+    overdue.forEach(function (t) {
+      var root = t.carriedId || t.id;
+      t.carried = true; // 已被顺延过，不再作为源头
+      if (existingCarried[root]) return;
+      todos.push({
+        id: U.uid(), date: today, text: t.text, priority: t.priority || '中',
+        done: false, carriedFrom: t.date, carriedId: root
+      });
+      existingCarried[root] = true;
+      added++;
+    });
+    return added;
+  };
+
+  /* ============ 学习：连续打卡 ============ */
+  /* 连续天数：从今天往回数（今天没打卡则从昨天起算，今天尚未结束不算断） */
+  L.streakDays = function (checkins, today) {
+    var n = 0;
+    var d = today;
+    if (!checkins[d]) d = U.addDays(today, -1);
+    while (checkins[d]) { n++; d = U.addDays(d, -1); }
+    return n;
+  };
+
+  L.checkinTotalMinutes = function (checkins, from, to) {
+    var sum = 0;
+    Object.keys(checkins).forEach(function (k) {
+      if (k >= from && k <= to && checkins[k]) sum += (checkins[k].minutes || 0);
+    });
+    return sum;
+  };
+
+  /* 热力格：以今天所在周的周一为终点，往前 weeks 周的周一列表 */
+  L.heatGridDays = function (today, weeks) {
+    var monday = U.mondayOf(today);
+    var start = U.addDays(monday, -(weeks - 1) * 7);
+    var days = [];
+    for (var i = 0; i < weeks * 7; i++) days.push(U.addDays(start, i));
+    return { start: start, days: days };
+  };
+
+  /* ============ 目标进度 ============ */
+  L.goalProgress = function (goal) {
+    var subs = (goal && goal.subtasks) || [];
+    if (!subs.length) return 0;
+    var done = subs.filter(function (s) { return s.done; }).length;
+    return Math.round(done / subs.length * 100);
+  };
+
+  /* ============ 咨询：收入统计 ============ */
+  L.incomeMonthSummary = function (incomes, month) { // month: 'YYYY-MM'
+    var received = 0, unreceived = 0, unreceivedCount = 0;
+    (incomes || []).forEach(function (r) {
+      if (U.monthOf(r.date) !== month) return;
+      if (r.received) received += (r.amount || 0);
+      else { unreceived += (r.amount || 0); unreceivedCount++; }
+    });
+    return { received: received, unreceived: unreceived, unreceivedCount: unreceivedCount };
+  };
+
+  L.incomeYearTotal = function (incomes, year) {
+    return U.sum((incomes || []).filter(function (r) { return (r.date || '').slice(0, 4) === String(year) && r.received; }), function (r) { return r.amount || 0; });
+  };
+
+  /* 近 n 个月序列（含当月），返回 [{month:'YYYY-MM', received, unreceived}] */
+  L.monthlyIncomeSeries = function (incomes, today, n) {
+    var out = [];
+    var d = U.parseDate(today);
+    d.setDate(1);
+    for (var i = n - 1; i >= 0; i--) {
+      var dd = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      var m = dd.getFullYear() + '-' + U.pad2(dd.getMonth() + 1);
+      var s = L.incomeMonthSummary(incomes, m);
+      out.push({ month: m, received: s.received, unreceived: s.unreceived });
+    }
+    return out;
+  };
+
+  /* ============ 自媒体：图表序列 ============ */
+  /* 返回 [{platform, points:[{date, value}]}]，按日期升序，metric ∈ views/likes/fans */
+  L.statsSeries = function (stats, metric, from, to) {
+    var byPlatform = new Map();
+    (stats || []).forEach(function (r) {
+      if (r.date < from || r.date > to) return;
+      var v = r[metric];
+      if (v == null) return;
+      if (!byPlatform.has(r.platform)) byPlatform.set(r.platform, []);
+      byPlatform.get(r.platform).push({ date: r.date, value: v });
+    });
+    var out = [];
+    byPlatform.forEach(function (points, platform) {
+      points.sort(U.byDateAsc);
+      out.push({ platform: platform, points: points });
+    });
+    out.sort(function (a, b) { return a.platform < b.platform ? -1 : (a.platform > b.platform ? 1 : 0); });
+    return out;
+  };
+
+  L.nextSchedule = function (schedule, today) {
+    var future = (schedule || []).filter(function (s) { return s.status === '计划中' && s.date >= today; }).sort(U.byDateAsc);
+    if (future.length) return future[0];
+    var past = (schedule || []).slice().sort(U.byDateDesc);
+    return past.length ? past[0] : null;
+  };
+
+  /* ============ 开发：摘要 ============ */
+  L.devSummary = function (projects) {
+    var inProgress = (projects || []).filter(function (p) { return p.status === '进行中'; });
+    var latest = (projects || []).slice().sort(function (a, b) { return (b.updated || '').localeCompare(a.updated || ''); })[0] || null;
+    return { inProgressCount: inProgress.length, latestNextStep: latest ? (latest.nextStep || '') : '', latestName: latest ? latest.name : '' };
+  };
+
+  /* 项目更新时生成自动进展记录文本 */
+  L.projectChangeLog = function (oldP, newP) {
+    var parts = [];
+    if (oldP.status !== newP.status) parts.push('状态：' + oldP.status + ' → ' + newP.status);
+    if (oldP.progress !== newP.progress) parts.push('进度：' + oldP.progress + '% → ' + newP.progress + '%');
+    if ((oldP.nextStep || '') !== (newP.nextStep || '')) parts.push('下一步：' + (newP.nextStep || '（空）'));
+    return parts.join('；');
+  };
+
+  /* ============ 饮食/体重 ============ */
+  L.weightSummary = function (weights) {
+    var sorted = (weights || []).slice().sort(U.byDateAsc);
+    if (!sorted.length) return null;
+    var last = sorted[sorted.length - 1];
+    var prev = sorted.length > 1 ? sorted[sorted.length - 2] : null;
+    return { latest: last, change: prev ? (last.kg - prev.kg) : 0 };
+  };
+
+  L.dietTodayDone = function (records, today) {
+    var r = records[today];
+    if (!r) return 0;
+    return ['breakfast', 'lunch', 'dinner'].filter(function (m) { return r[m] && r[m].eaten; }).length;
+  };
+
+  /* ============ 游戏娱乐 ============ */
+  L.funWeekMinutes = function (funRecords, today) {
+    var mon = U.mondayOf(today);
+    var sun = U.addDays(mon, 6);
+    return U.sum((funRecords || []).filter(function (r) { return r.date >= mon && r.date <= sun; }), function (r) { return r.minutes || 0; });
+  };
+
+  L.funMonthMinutes = function (funRecords, today) {
+    var m = U.monthOf(today);
+    return U.sum((funRecords || []).filter(function (r) { return U.monthOf(r.date) === m; }), function (r) { return r.minutes || 0; });
+  };
+
+  /* 抽选池 = 每周娱乐安排 + 手动 pool；随机抽一个，可排除若干 id */
+  L.buildPickPool = function (weekly, pool) {
+    var items = [];
+    (weekly || []).forEach(function (w) { items.push({ id: w.id, text: w.what, src: 'weekly' }); });
+    (pool || []).forEach(function (p) { items.push({ id: p.id, text: p.text, src: 'pool' }); });
+    return items;
+  };
+
+  L.randomPick = function (items, excludeIds, rand) {
+    var r = rand || Math.random;
+    var avail = (items || []).filter(function (it) { return !(excludeIds || []).includes(it.id); });
+    if (!avail.length) avail = items || [];
+    if (!avail.length) return null;
+    return avail[Math.floor(r() * avail.length) % avail.length];
+  };
+
+  /* ============ 今日计划摘要 ============ */
+  L.planSummary = function (data, today) {
+    var todos = data.plan.todos.filter(function (t) { return t.date === today; });
+    var events = data.plan.events.filter(function (e) { return e.date === today; });
+    return {
+      todoTotal: todos.length,
+      todoDone: todos.filter(function (t) { return t.done; }).length,
+      eventCount: events.length
+    };
+  };
+
+  /* ============ 校验 ============ */
+  L.validateRequired = function (v, label) {
+    return (v == null || String(v).trim() === '') ? (label + '不能为空') : null;
+  };
+  L.validateNumber = function (v, label, opts) {
+    opts = opts || {};
+    if (v === '' || v == null) return opts.required ? (label + '不能为空') : null;
+    var n = U.toNum(v, null);
+    if (n === null) return label + '必须是数字';
+    if (opts.min != null && n < opts.min) return label + '不能小于 ' + opts.min;
+    if (opts.max != null && n > opts.max) return label + '不能大于 ' + opts.max;
+    return null;
+  };
+  L.validateTimeRange = function (start, end) {
+    if (!U.isValidTime(start)) return '开始时间格式应为 HH:MM';
+    if (!U.isValidTime(end)) return '结束时间格式应为 HH:MM';
+    if (U.timeToMin(end) <= U.timeToMin(start)) return '结束时间必须晚于开始时间';
+    return null;
+  };
+  /* 日程重叠检测：返回与 [start,end) 重叠的其他日程数量 */
+  L.countOverlaps = function (events, date, start, end, excludeId) {
+    var s = U.timeToMin(start), e = U.timeToMin(end);
+    return (events || []).filter(function (ev) {
+      return ev.date === date && ev.id !== excludeId &&
+        U.timeToMin(ev.start) < e && s < U.timeToMin(ev.end);
+    }).length;
+  };
+
+  App.logic = L;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/30-store.js ==== */
+/* 30-store.js — 内存 store + 变更 API + 自动保存管道（适配器注入，可 Node 测试） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, S = App.schema, L = App.logic;
+
+  function createStore() {
+    var data = S.defaultData();
+    var subs = [];
+    var fileAdapter = null;   // {isConnected(), name(), write(json):Promise|void}
+    var cacheAdapter = null;  // {saveSnapshot(json), pushOps(ops), loadOps(), clearOps(), saveMeta(obj), loadMeta(), loadSnapshot()}
+    var pendingOps = [];      // 未落盘到文件的操作日志
+    var saveState = 'idle';   // idle | saved | cache | error
+    var lastError = null;
+
+    var store = {};
+
+    Object.defineProperty(store, 'data', { get: function () { return data; } });
+    store.pendingOps = function () { return pendingOps.slice(); };
+    store.saveState = function () { return saveState; };
+    store.lastError = function () { return lastError; };
+
+    store.setFileAdapter = function (a) { fileAdapter = a; };
+    store.setCacheAdapter = function (a) { cacheAdapter = a; };
+    store.fileConnected = function () { return !!(fileAdapter && fileAdapter.isConnected()); };
+    store.fileName = function () { return (fileAdapter && fileAdapter.name()) || ''; };
+
+    store.subscribe = function (fn) { subs.push(fn); };
+    store.notify = function () {
+      subs.forEach(function (fn) {
+        try { fn(data); } catch (e) { if (typeof console !== 'undefined') console.error(e); }
+      });
+    };
+
+    function setSaveStateUI(state, errText) {
+      saveState = state;
+      lastError = errText || null;
+      if (typeof document !== 'undefined' && App.shell) {
+        if (state === 'saved') App.shell.setSaveState('已保存 ✓', 'ok');
+        else if (state === 'cache') App.shell.setSaveState('暂存浏览器', '');
+        else if (state === 'error') App.shell.setSaveState('保存失败 ⚠', 'err');
+        else App.shell.setSaveState('—', '');
+        App.shell.setFileState(store.fileConnected(), store.fileName());
+      }
+    }
+    store.setSaveStateUI = setSaveStateUI;
+
+    /* ---- 变更 API（全部经过这里，自动记 op） ---- */
+    function pushOp(op) {
+      pendingOps.push(op);
+      if (pendingOps.length > 5000) pendingOps = pendingOps.slice(-4000);
+    }
+
+    store.upsert = function (path, record) {
+      var cleaned = S.cleanRecord(path, record);
+      if (!cleaned) return null;
+      var arr = S.ensurePath(data, path, []);
+      var idx = -1;
+      for (var i = 0; i < arr.length; i++) if (arr[i].id === cleaned.id) { idx = i; break; }
+      if (idx >= 0) arr[idx] = cleaned; else arr.push(cleaned);
+      pushOp(L.opUpsert(path, cleaned));
+      store.commit();
+      return cleaned;
+    };
+
+    store.mapSet = function (path, key, value) {
+      var cleaned = S.cleanMapValue(path, key, value);
+      var map = S.ensurePath(data, path, {});
+      if (cleaned === undefined) {
+        /* 清洗后为空（如清空回顾）= 删除该键 */
+        if (Object.prototype.hasOwnProperty.call(map, key)) {
+          delete map[key];
+          pushOp(L.opRemove(path, key));
+          store.commit();
+        }
+        return false;
+      }
+      map[key] = cleaned;
+      pushOp(L.opMapSet(path, key, cleaned));
+      store.commit();
+      return true;
+    };
+
+    store.remove = function (path, id) {
+      var kind = S.COLLECTIONS[path];
+      if (kind === 'array') {
+        var arr = S.ensurePath(data, path, []);
+        for (var i = arr.length - 1; i >= 0; i--) if (arr[i].id === id) arr.splice(i, 1);
+      } else if (kind === 'map') {
+        delete S.ensurePath(data, path, {})[id];
+      }
+      pushOp(L.opRemove(path, id));
+      store.commit();
+    };
+
+    store.setSetting = function (key, value) {
+      data.settings[key] = (value && typeof value === 'object') ? U.deepClone(value) : value;
+      pushOp(L.opSetting(key, data.settings[key]));
+      store.commit();
+    };
+
+    /* 整体替换数据（连接文件/恢复/清空时用）：skipOps=不记 op */
+    store.setData = function (newData) {
+      data = S.normalize(newData) || S.defaultData();
+      store.commit();
+    };
+
+    store.commit = function () {
+      store.notify();
+      store.queueSave();
+    };
+
+    /* ---- 保存管道 ---- */
+    store.saveNow = function () {
+      var json = S.serialize(data);
+      /* 快照缓存始终写（应急兜底） */
+      if (cacheAdapter) {
+        try {
+          cacheAdapter.saveSnapshot(json);
+          if (pendingOps.length) cacheAdapter.pushOps(pendingOps.slice());
+        } catch (e) { /* 缓存失败不阻塞 */ }
+      }
+      if (fileAdapter && fileAdapter.isConnected()) {
+        var done = function (err) {
+          if (err) {
+            setSaveStateUI('error', String(err && err.message || err));
+            if (cacheAdapter) { try { cacheAdapter.pushOps(pendingOps.slice()); } catch (e2) {} }
+          } else {
+            pendingOps = [];
+            if (cacheAdapter) { try { cacheAdapter.clearOps(); } catch (e2) {} }
+            setSaveStateUI('saved');
+          }
+        };
+        try {
+          var r = fileAdapter.write(json);
+          if (r && typeof r.then === 'function') r.then(function () { done(null); }, function (e) { done(e); });
+          else done(null);
+        } catch (e) { done(e); }
+      } else {
+        setSaveStateUI('cache');
+      }
+    };
+
+    store.queueSave = U.debounce(store.saveNow, 500);
+
+    /* 清空未决 op（连接文件重放成功后由 persist 调用） */
+    store.takePendingOps = function () {
+      var ops = pendingOps.slice();
+      pendingOps = [];
+      if (cacheAdapter) { try { cacheAdapter.clearOps(); } catch (e) {} }
+      return ops;
+    };
+    store.restorePendingOps = function (ops) { pendingOps = ops.slice(); };
+
+    /* 启动：从缓存恢复（未连接文件时的暂存数据） */
+    store.loadFromCache = function () {
+      if (!cacheAdapter) return false;
+      var snap = null;
+      try { snap = cacheAdapter.loadSnapshot(); } catch (e) {}
+      if (snap) {
+        var norm = S.normalize(snap);
+        if (norm) data = norm;
+      }
+      var ops = [];
+      try { ops = cacheAdapter.loadOps() || []; } catch (e) {}
+      pendingOps = ops.slice();
+      if (pendingOps.length) L.applyOplog(data, pendingOps);
+      return true;
+    };
+
+    return store;
+  }
+
+  App.createStore = createStore;
+  if (typeof document !== 'undefined' || !App.store) {
+    App.store = App.store || createStore();
+  }
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/40-persist.js ==== */
+/* 40-persist.js — 浏览器持久化层：IndexedDB 句柄、FSA 文件连接、localStorage 缓存、备份/恢复/导出/清空 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, S = App.schema, L = App.logic;
+
+  var caps = {
+    open: typeof window !== 'undefined' && typeof window.showOpenFilePicker === 'function',
+    save: typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function',
+    dir: typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function'
+  };
+
+  var P = { caps: caps };
+
+  if (typeof window === 'undefined') {
+    App.persist = P; // Node 环境：仅暴露能力标志，供测试引用
+    if (typeof module !== 'undefined' && module.exports) module.exports = globalThis.App;
+    return;
+  }
+
+  var store = App.store;
+  var ui = function () {
+    return App.ui || {
+      toast: function (m) { console.log('[toast] ' + m); },
+      confirm: function (m) { return window.confirm(m); },
+      alert: function (m) { window.alert(m); }
+    };
+  };
+
+  /* ============ localStorage 缓存适配器 ============ */
+  var LS_SNAP = 'papp.snap', LS_OPS = 'papp.ops', LS_BACKUPS = 'papp.backupNames';
+  var cacheAdapter = {
+    saveSnapshot: function (json) { try { localStorage.setItem(LS_SNAP, json); } catch (e) {} },
+    loadSnapshot: function () { try { return localStorage.getItem(LS_SNAP); } catch (e) { return null; } },
+    pushOps: function (ops) { try { localStorage.setItem(LS_OPS, JSON.stringify(ops)); } catch (e) {} }, // 语义=整体替换为当前全部未决 ops
+    loadOps: function () { try { return JSON.parse(localStorage.getItem(LS_OPS) || '[]'); } catch (e) { return []; } },
+    clearOps: function () { try { localStorage.removeItem(LS_OPS); } catch (e) {} }
+  };
+
+  /* ============ IndexedDB（存文件句柄） ============ */
+  function idb() {
+    return new Promise(function (res, rej) {
+      var req = indexedDB.open('papp-db', 1);
+      req.onupgradeneeded = function () {
+        if (!req.result.objectStoreNames.contains('kv')) req.result.createObjectStore('kv');
+      };
+      req.onsuccess = function () { res(req.result); };
+      req.onerror = function () { rej(req.error); };
+    });
+  }
+  function idbGet(key) {
+    return idb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction('kv', 'readonly');
+        var r = tx.objectStore('kv').get(key);
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      });
+    });
+  }
+  function idbSet(key, val) {
+    return idb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(val, key);
+        tx.oncomplete = function () { res(true); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    }).catch(function () { return false; });
+  }
+
+  /* ============ 文件适配器 ============ */
+  var fileHandle = null;
+
+  function makeFileAdapter(handle) {
+    return {
+      isConnected: function () { return !!handle; },
+      name: function () { return handle ? handle.name : ''; },
+      write: function (json) {
+        return handle.createWritable().then(function (w) {
+          return w.write(json).then(function () { return w.close(); });
+        });
+      }
+    };
+  }
+
+  async function ensurePermission(handle) {
+    var opts = { mode: 'readwrite' };
+    if ((await handle.queryPermission(opts)) === 'granted') return true;
+    return (await handle.requestPermission(opts)) === 'granted';
+  }
+
+  async function readHandleText(handle) {
+    var f = await handle.getFile();
+    return await f.text();
+  }
+
+  /* 连接成功后的通用流程：读文件 → normalize → 重放 oplog → 写回 */
+  async function adoptHandle(handle, opts) {
+    opts = opts || {};
+    if (!(await ensurePermission(handle))) throw new Error('未获得文件读写授权');
+    var text = await readHandleText(handle);
+    var fileData = S.normalize(text);
+    if (fileData === null) {
+      /* 文件内容无法识别 */
+      if (!opts.forceOverwrite && !ui().confirm('文件「' + handle.name + '」内容无法识别（不是本 App 的数据格式）。\n是否用当前数据覆盖它？\n（选"取消"则不连接）')) {
+        throw new Error('文件内容无法识别');
+      }
+      fileData = S.normalize(store.data);
+    }
+    var ops = store.pendingOps();
+    if (ops.length) {
+      L.applyOplog(fileData, ops);
+    }
+    fileHandle = handle;
+    store.setFileAdapter(makeFileAdapter(handle));
+    store.setData(fileData);       // setData→commit→queueSave（合并结果随后写回文件）
+    var carried = L.carryOverTodos(store.data, U.today());
+    if (carried) store.commit();
+    store.saveNow();               // 立即写一次，成功后清空 pendingOps
+    idbSet('fileHandle', handle);
+    App.shell.setFileState(true, handle.name);
+    if (App.shell.rerender) App.shell.rerender();
+    return handle.name;
+  }
+
+  /* 用户点击「连接数据文件」 */
+  P.connect = async function () {
+    try {
+      /* 1) 优先用记住的句柄 */
+      var saved = await idbGet('fileHandle').catch(function () { return null; });
+      if (saved) {
+        try {
+          var name = await adoptHandle(saved);
+          ui().toast('已连接：' + name);
+          return name;
+        } catch (e) { /* 句柄失效则走选择器 */ }
+      }
+      /* 2) 文件选择器 */
+      if (!caps.open) { ui().alert('当前浏览器不支持连接本地文件，请使用「导出/导入」管理数据。'); return null; }
+      var [h] = await window.showOpenFilePicker({
+        mode: 'readwrite',
+        types: [{ description: '数据文件', accept: { 'application/json': ['.json'], 'text/plain': ['.txt'] } }],
+        multiple: false
+      });
+      var name2 = await adoptHandle(h);
+      ui().toast('已连接：' + name2);
+      return name2;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return null; // 用户取消
+      ui().toast('连接失败：' + (e && e.message || e), true);
+      return null;
+    }
+  };
+
+  /* ============ 下载兜底 ============ */
+  function downloadBlob(filename, text) {
+    var blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  }
+  P.downloadBlob = downloadBlob;
+
+  /* ============ 新建数据文件 ============ */
+  P.createNew = async function () {
+    var json = S.serialize(store.data);
+    if (caps.save) {
+      try {
+        var handle = await window.showSaveFilePicker({
+          suggestedName: '我的数据.json',
+          types: [{ description: '数据文件', accept: { 'application/json': ['.json'] } }]
+        });
+        var name = await adoptHandle(handle, { forceOverwrite: true });
+        ui().toast('已创建数据文件：' + name);
+        return name;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return null;
+        ui().toast('创建失败：' + (e && e.message || e), true);
+        return null;
+      }
+    }
+    /* 降级：下载初始文件 + 引导连接 */
+    downloadBlob('我的数据.json', json);
+    ui().alert('已下载初始数据文件「我的数据.json」。\n\n请把它移动到固定位置（建议 APP 文件夹），然后点顶栏「● 未连接」→ 在弹出的选择框中选中这个文件，即完成连接。\n\n（也可以手动新建一个空的 .json 文件再连接，App 会自动写入初始数据）');
+    return 'downloaded';
+  };
+
+  /* ============ 备份 ============ */
+  function usedBackupNames() {
+    try { return JSON.parse(localStorage.getItem(LS_BACKUPS) || '[]'); } catch (e) { return []; }
+  }
+  function rememberBackupName(name) {
+    var arr = usedBackupNames();
+    if (arr.indexOf(name) === -1) arr.push(name);
+    if (arr.length > 200) arr = arr.slice(-200);
+    try { localStorage.setItem(LS_BACKUPS, JSON.stringify(arr)); } catch (e) {}
+  }
+
+  async function backupDirHandle(create) {
+    var dh = await idbGet('backupDir').catch(function () { return null; });
+    if (dh) return dh;
+    if (!create || !caps.dir) return null;
+    try {
+      dh = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      await idbSet('backupDir', dh);
+      return dh;
+    } catch (e) { return null; }
+  }
+
+  P.backup = async function (opts) {
+    opts = opts || {};
+    var json = S.serialize(store.data);
+    var today = U.today();
+    try {
+      var dh = await backupDirHandle(!opts.noPicker);
+      if (dh) {
+        var sub = await dh.getDirectoryHandle('备份', { create: true });
+        var names = [];
+        for await (var n of sub.keys()) names.push(n);
+        var fname = U.backupFileName(opts.baseName || '我的数据', today, names);
+        var fh = await sub.getFileHandle(fname, { create: true });
+        var w = await fh.createWritable();
+        await w.write(json); await w.close();
+        ui().toast('已备份到「备份」文件夹：' + fname);
+        return fname;
+      }
+    } catch (e) { /* 目录方式失败 → 下载兜底 */ }
+    var fname2 = U.backupFileName(opts.baseName || '我的数据', today, usedBackupNames());
+    downloadBlob(fname2, json);
+    rememberBackupName(fname2);
+    ui().toast('已备份（浏览器下载）：' + fname2);
+    return fname2;
+  };
+
+  /* ============ 恢复 ============ */
+  function pickFileFallback() {
+    return new Promise(function (res) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,.txt,application/json';
+      input.onchange = function () { res(input.files && input.files[0] ? input.files[0] : null); };
+      input.click();
+    });
+  }
+
+  P.restore = async function () {
+    try {
+      var text = null, fname = '';
+      if (caps.open) {
+        var [h] = await window.showOpenFilePicker({
+          mode: 'readonly',
+          types: [{ description: '备份文件', accept: { 'application/json': ['.json'], 'text/plain': ['.txt'] } }],
+          multiple: false
+        });
+        fname = h.name;
+        text = await readHandleText(h);
+      } else {
+        var f = await pickFileFallback();
+        if (!f) return false;
+        fname = f.name;
+        text = await f.text();
+      }
+      var restored = S.normalize(text);
+      if (restored === null) { ui().alert('所选文件无法识别（不是本 App 的数据/备份文件），未做任何改动。'); return false; }
+      /* 恢复前快照 */
+      try {
+        var snapName = '恢复前快照-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '') + '.json';
+        downloadBlob(snapName, S.serialize(store.data));
+      } catch (e) {}
+      store.setData(restored);
+      store.saveNow();
+      syncSettingsToShell();
+      if (App.shell.rerender) App.shell.rerender();
+      ui().toast('已从「' + fname + '」恢复（恢复前数据已自动另存为快照下载）');
+      return true;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return false;
+      ui().toast('恢复失败：' + (e && e.message || e), true);
+      return false;
+    }
+  };
+
+  /* ============ 导出 / 清空 ============ */
+  P.exportJSON = function () {
+    var name = '我的数据-导出-' + U.today() + '.json';
+    downloadBlob(name, S.serialize(store.data));
+    ui().toast('已导出：' + name);
+  };
+
+  P.clearAll = function () {
+    store.setData(S.defaultData());
+    store.saveNow();
+    syncSettingsToShell();
+    if (App.shell.rerender) App.shell.rerender();
+    ui().toast('已清空全部数据');
+  };
+
+  /* ============ 设置同步到外壳 ============ */
+  function syncSettingsToShell() {
+    var st = store.data.settings;
+    App.shell.applyTheme(st.theme || 'light');
+    App.shell.applySidebar(!!st.sidebarCollapsed);
+  }
+  P.syncSettingsToShell = syncSettingsToShell;
+
+  /* ============ 启动 ============ */
+  P.boot = async function () {
+    store.setCacheAdapter(cacheAdapter);
+    store.loadFromCache();
+    var carried = L.carryOverTodos(store.data, U.today());
+    if (carried) store.commit();
+    syncSettingsToShell();
+    store.setSaveStateUI(store.pendingOps().length ? 'cache' : 'idle');
+
+    /* 尝试用记住的句柄静默连接（仅在已授权时，不弹权限框） */
+    try {
+      var saved = await idbGet('fileHandle');
+      if (saved && (await saved.queryPermission({ mode: 'readwrite' })) === 'granted') {
+        await adoptHandle(saved);
+      }
+    } catch (e) { /* 静默失败 → 显示未连接 */ }
+    App.shell.setFileState(store.fileConnected(), store.fileName());
+  };
+
+  App.boot = function () { P.boot(); };
+  App.persist = P;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = globalThis.App;
+});
+
+</script>
+<script>
+/* ==== js/50-dom.js ==== */
+/* 50-dom.js — DOM 助手与全局 UI（toast/弹窗表单/确认框/空状态/标签页/日期导航）
+   纯校验逻辑 validateFieldValue 可在 Node 测试 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, L = App.logic;
+  var D = {};
+
+  /* ---- 纯校验（Node 可测） ----
+     field: {key,label,type,required,min,max,validate(value, values)} */
+  D.validateFieldValue = function (field, value, values) {
+    if (field.validate) return field.validate(value, values || {}) || null;
+    switch (field.type) {
+      case 'number':
+        return L.validateNumber(value, field.label, { required: !!field.required, min: field.min, max: field.max });
+      case 'time':
+        if (field.required && !value) return field.label + '不能为空';
+        if (value && !U.isValidTime(value)) return field.label + '格式应为 HH:MM';
+        return null;
+      case 'date':
+        if (field.required && !value) return field.label + '不能为空';
+        if (value && !U.isValidDateStr(value)) return field.label + '格式应为 YYYY-MM-DD';
+        return null;
+      default:
+        if (field.required) return L.validateRequired(value, field.label);
+        return null;
+    }
+  };
+
+  if (typeof document === 'undefined') {
+    App.dom = D;
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  /* ---- DOM 助手 ---- */
+  D.el = function (html) {
+    var t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstElementChild;
+  };
+  D.els = function (html) {
+    var t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return Array.prototype.slice.call(t.content.children);
+  };
+  D.on = function (root, selector, evt, fn) {
+    root.addEventListener(evt, function (e) {
+      var t = e.target.closest(selector);
+      if (t && root.contains(t)) fn(e, t);
+    });
+  };
+
+  var ui = {};
+  App.ui = ui;
+  App.dom = D;
+
+  /* ---- toast ---- */
+  ui.toast = function (msg, isErr) {
+    var root = document.getElementById('toast-root');
+    var el = D.el('<div class="toast' + (isErr ? ' toast-err' : '') + '">' + U.esc(msg) + '</div>');
+    root.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 2200);
+    setTimeout(function () { el.remove(); }, 2600);
+  };
+
+  /* ---- 弹窗表单 ----
+     opts: {title, fields:[...], values:{}, wide, submitText, onSubmit(values)->errMap|null, onDelete}
+     返回 {close} */
+  ui.modal = function (opts) {
+    var mask = D.el('<div class="modal-mask"><div class="modal' + (opts.wide ? ' wide' : '') + '"></div></div>');
+    var box = mask.firstElementChild;
+    var html = '<div class="modal-title">' + U.esc(opts.title || '') + '</div><form novalidate>';
+    (opts.fields || []).forEach(function (f) {
+      var v = (opts.values || {})[f.key];
+      html += '<div class="form-row" data-key="' + f.key + '"><label' + (f.required ? ' class="required"' : '') + '>' + U.esc(f.label) + '</label>';
+      switch (f.type) {
+        case 'textarea':
+          html += '<textarea class="textarea" rows="' + (f.rows || 3) + '" data-key="' + f.key + '" placeholder="' + U.esc(f.placeholder || '') + '">' + U.esc(v == null ? '' : v) + '</textarea>';
+          break;
+        case 'select':
+          html += '<select class="select" data-key="' + f.key + '">' + (f.options || []).map(function (o) {
+            var val = typeof o === 'object' ? o.value : o, lab = typeof o === 'object' ? o.label : o;
+            return '<option value="' + U.esc(val) + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + U.esc(lab) + '</option>';
+          }).join('') + '</select>';
+          break;
+        case 'switch':
+          html += '<label class="row"><input type="checkbox" data-key="' + f.key + '"' + (v ? ' checked' : '') + '><span>' + U.esc(f.onText || '是') + '</span></label>';
+          break;
+        case 'slider':
+          html += '<div class="row"><input type="range" min="' + (f.min || 0) + '" max="' + (f.max || 100) + '" step="' + (f.step || 1) + '" value="' + (v == null ? (f.min || 0) : v) + '" data-key="' + f.key + '"><span class="slider-val muted">' + (v == null ? (f.min || 0) : v) + (f.unit || '') + '</span></div>';
+          break;
+        case 'number':
+          html += '<input class="input" type="number" step="any" data-key="' + f.key + '" value="' + U.esc(v == null ? '' : v) + '" placeholder="' + U.esc(f.placeholder || '') + '">';
+          break;
+        case 'date':
+          html += '<input class="input" type="date" data-key="' + f.key + '" value="' + U.esc(v == null ? '' : v) + '">';
+          break;
+        case 'time':
+          html += '<input class="input" type="time" data-key="' + f.key + '" value="' + U.esc(v == null ? '' : v) + '">';
+          break;
+        default:
+          html += '<input class="input" type="text" data-key="' + f.key + '" value="' + U.esc(v == null ? '' : v) + '" placeholder="' + U.esc(f.placeholder || '') + '"' + (f.list ? ' list="' + f.list + '"' : '') + '>';
+      }
+      html += '<div class="field-error"></div></div>';
+    });
+    html += '<div class="modal-actions">' +
+      (opts.onDelete ? '<button type="button" class="btn btn-danger" data-act="delete">删除</button><span class="spacer" style="flex:1"></span>' : '') +
+      '<button type="button" class="btn" data-act="cancel">取消</button>' +
+      '<button type="submit" class="btn btn-primary">' + U.esc(opts.submitText || '保存') + '</button></div></form>';
+    box.innerHTML = html;
+    document.getElementById('modal-root').appendChild(mask);
+
+    var form = box.querySelector('form');
+    function readValues() {
+      var vals = {};
+      (opts.fields || []).forEach(function (f) {
+        var input = form.querySelector('[data-key="' + f.key + '"]:not(.form-row)');
+        if (!input) { vals[f.key] = (opts.values || {})[f.key]; return; }
+        if (f.type === 'switch') vals[f.key] = input.checked;
+        else if (f.type === 'number') vals[f.key] = input.value === '' ? null : U.toNum(input.value, null);
+        else if (f.type === 'slider') vals[f.key] = U.toNum(input.value, f.min || 0);
+        else vals[f.key] = input.value;
+      });
+      return vals;
+    }
+    function showErrors(errs) {
+      var any = false;
+      (opts.fields || []).forEach(function (f) {
+        var row = form.querySelector('.form-row[data-key="' + f.key + '"]');
+        if (!row) return;
+        var msg = errs && errs[f.key];
+        row.querySelector('.field-error').textContent = msg || '';
+        var input = row.querySelector('.input, .textarea');
+        if (input) input.classList.toggle('invalid', !!msg);
+        if (msg) any = true;
+      });
+      return any;
+    }
+    form.addEventListener('input', function (e) {
+      if (e.target.type === 'range') {
+        var f = (opts.fields || []).filter(function (x) { return x.key === e.target.dataset.key; })[0];
+        e.target.parentElement.querySelector('.slider-val').textContent = e.target.value + ((f && f.unit) || '');
+      }
+      var row = e.target.closest('.form-row');
+      if (row) { row.querySelector('.field-error').textContent = ''; var i = row.querySelector('.input, .textarea'); if (i) i.classList.remove('invalid'); }
+    });
+    form.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); submit(); }
+      if (e.key === 'Escape') close();
+    });
+    form.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+    function submit() {
+      var vals = readValues();
+      var errs = {};
+      (opts.fields || []).forEach(function (f) {
+        var err = D.validateFieldValue(f, vals[f.key], vals);
+        if (err) errs[f.key] = err;
+      });
+      if (showErrors(errs)) return;
+      var ret = opts.onSubmit ? opts.onSubmit(vals) : null;
+      if (ret && typeof ret === 'object') { if (showErrors(ret)) return; }
+      close();
+    }
+    box.querySelector('[data-act="cancel"]').addEventListener('click', close);
+    if (opts.onDelete) box.querySelector('[data-act="delete"]').addEventListener('click', function () {
+      ui.confirm({ title: '删除确认', text: opts.deleteText || '确定删除吗？此操作不可撤销。', danger: true }).then(function (ok) {
+        if (ok) { opts.onDelete(); close(); }
+      });
+    });
+    mask.addEventListener('mousedown', function (e) { if (e.target === mask) close(); });
+    function close() { mask.remove(); }
+    var first = form.querySelector('.input, .textarea, select');
+    if (first) setTimeout(function () { first.focus(); }, 30);
+    return { close: close, readValues: readValues };
+  };
+
+  /* ---- 确认框 ---- */
+  ui.confirm = function (opts) {
+    return new Promise(function (resolve) {
+      var mask = D.el('<div class="modal-mask"><div class="modal"></div></div>');
+      var box = mask.firstElementChild;
+      var need = opts.requireText || null;
+      box.innerHTML = '<div class="modal-title">' + U.esc(opts.title || '确认') + '</div>' +
+        '<div style="white-space:pre-wrap;line-height:1.7">' + U.esc(opts.text || '') + '</div>' +
+        (need ? '<div class="form-row mt12"><label>请输入「' + U.esc(need) + '」以确认</label><input class="input" id="confirm-input"></div>' : '') +
+        '<div class="modal-actions"><button class="btn" data-act="no">取消</button>' +
+        '<button class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" data-act="yes"' + (need ? ' disabled' : '') + '>' + U.esc(opts.okText || '确定') + '</button></div>';
+      document.getElementById('modal-root').appendChild(mask);
+      var yes = box.querySelector('[data-act="yes"]');
+      if (need) {
+        var input = box.querySelector('#confirm-input');
+        input.addEventListener('input', function () { yes.disabled = input.value.trim() !== need; });
+        setTimeout(function () { input.focus(); }, 30);
+      }
+      function done(v) { mask.remove(); resolve(v); }
+      yes.addEventListener('click', function () { done(true); });
+      box.querySelector('[data-act="no"]').addEventListener('click', function () { done(false); });
+      mask.addEventListener('mousedown', function (e) { if (e.target === mask) done(false); });
+      mask.addEventListener('keydown', function (e) { if (e.key === 'Escape') done(false); });
+    });
+  };
+
+  ui.alert = function (text, title) {
+    return ui.confirm({ title: title || '提示', text: text, okText: '知道了' });
+  };
+
+  /* ---- 空状态 ---- */
+  ui.emptyState = function (icon, text, btnText, onAdd) {
+    var el = D.el('<div class="empty-state"><div class="empty-icon">' + (icon || '📭') + '</div><div>' + U.esc(text) + '</div>' +
+      (btnText ? '<button class="btn btn-primary">' + U.esc(btnText) + '</button>' : '') + '</div>');
+    if (btnText && onAdd) el.querySelector('button').addEventListener('click', onAdd);
+    return el;
+  };
+
+  /* ---- 标签页 ---- */
+  ui.tabs = function (list, activeId, onChange) {
+    var el = D.el('<div class="tabs"></div>');
+    el.innerHTML = list.map(function (t) {
+      return '<button class="tab-btn' + (t.id === activeId ? ' active' : '') + '" data-id="' + t.id + '">' + U.esc(t.label) + '</button>';
+    }).join('');
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest('.tab-btn');
+      if (b && b.dataset.id !== activeId) onChange(b.dataset.id);
+    });
+    return el;
+  };
+
+  /* ---- 日期导航条 ---- */
+  ui.dateNav = function (current, onChange) {
+    var el = D.el('<div class="row" style="margin-bottom:14px">' +
+      '<button class="btn btn-small" data-act="prev">← 前一天</button>' +
+      '<button class="btn btn-small" data-act="today">今天</button>' +
+      '<button class="btn btn-small" data-act="next">后一天 →</button>' +
+      '<input type="date" class="input" style="width:160px" value="' + U.esc(current) + '">' +
+      '<span class="muted small date-label"></span></div>');
+    var input = el.querySelector('input');
+    var label = el.querySelector('.date-label');
+    function set(d) { onChange(d); }
+    el.querySelector('[data-act="prev"]').addEventListener('click', function () { set(U.addDays(current, -1)); });
+    el.querySelector('[data-act="next"]').addEventListener('click', function () { set(U.addDays(current, 1)); });
+    el.querySelector('[data-act="today"]').addEventListener('click', function () { set(U.today()); });
+    input.addEventListener('change', function () { if (U.isValidDateStr(input.value)) set(input.value); });
+    el.refresh = function (d) {
+      current = d;
+      input.value = d;
+      label.textContent = d === U.today() ? '' : '正在查看 ' + U.fmtDateCN(d) + ' 周' + U.weekdayCN(d);
+    };
+    el.refresh(current);
+    return el;
+  };
+
+  /* ---- 统计卡 ---- */
+  ui.statCard = function (label, value, sub, onClick) {
+    var el = D.el('<div class="card" style="padding:12px 16px' + (onClick ? ';cursor:pointer' : '') + '">' +
+      '<div class="muted small">' + U.esc(label) + '</div>' +
+      '<div style="font-size:20px;font-weight:700;margin:4px 0">' + U.esc(value) + '</div>' +
+      (sub ? '<div class="muted small">' + U.esc(sub) + '</div>' : '') + '</div>');
+    if (onClick) el.addEventListener('click', onClick);
+    return el;
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/52-charts.js ==== */
+/* 52-charts.js — 轻量 SVG 图表（纯字符串构建，可 Node 测试；无外部依赖） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util;
+  var C = {};
+
+  C.PALETTE = ['#4f7cff', '#e85d9a', '#22a06b', '#ff8c42', '#7a5cff', '#2bb3c0', '#d9a514', '#f2555a'];
+
+  function esc(s) { return U.esc(s); }
+
+  function emptySvg(w, h, text) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" role="img">' +
+      '<text x="' + (w / 2) + '" y="' + (h / 2) + '" text-anchor="middle" fill="var(--text-soft)" font-size="13">' + esc(text || '暂无数据') + '</text></svg>';
+  }
+
+  /* ---- 折线图 ----
+     series: [{name, points:[{date, value}]}]
+     opts: {width, height, from, to, yFmt} */
+  C.lineChart = function (series, opts) {
+    opts = opts || {};
+    var W = opts.width || 720, H = opts.height || 240;
+    var pad = { l: 46, r: 14, t: 14, b: 26 };
+    var all = [];
+    (series || []).forEach(function (s) { (s.points || []).forEach(function (p) { all.push(p); }); });
+    if (!all.length) return emptySvg(W, H);
+
+    var dates = all.map(function (p) { return p.date; }).sort();
+    var from = opts.from || dates[0], to = opts.to || dates[dates.length - 1];
+    var span = Math.max(1, U.diffDays(from, to));
+    var vals = all.map(function (p) { return p.value; });
+    var maxV = Math.max.apply(null, vals.concat([1]));
+    var minV = Math.min.apply(null, vals.concat([0]));
+    if (maxV === minV) maxV = minV + 1;
+
+    function x(date) { return pad.l + (U.diffDays(from, date) / span) * (W - pad.l - pad.r); }
+    function y(v) { return pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b); }
+
+    var parts = ['<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" role="img" class="chart">'];
+    /* 网格与 y 轴刻度（4 档） */
+    for (var g = 0; g <= 4; g++) {
+      var vy = minV + (maxV - minV) * g / 4;
+      var yy = y(vy);
+      parts.push('<line x1="' + pad.l + '" y1="' + yy + '" x2="' + (W - pad.r) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1"/>');
+      parts.push('<text x="' + (pad.l - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10" fill="var(--text-soft)">' + esc(opts.yFmt ? opts.yFmt(vy) : Math.round(vy)) + '</text>');
+    }
+    /* x 轴首尾日期 */
+    parts.push('<text x="' + pad.l + '" y="' + (H - 8) + '" font-size="10" fill="var(--text-soft)">' + esc(U.fmtDateCN(from)) + '</text>');
+    parts.push('<text x="' + (W - pad.r) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10" fill="var(--text-soft)">' + esc(U.fmtDateCN(to)) + '</text>');
+
+    (series || []).forEach(function (s, si) {
+      var color = s.color || C.PALETTE[si % C.PALETTE.length];
+      var pts = (s.points || []).slice().sort(U.byDateAsc);
+      if (!pts.length) return;
+      var d = pts.map(function (p, i) {
+        return (i ? 'L' : 'M') + x(p.date).toFixed(1) + ' ' + y(p.value).toFixed(1);
+      }).join(' ');
+      parts.push('<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2"/>');
+      pts.forEach(function (p) {
+        parts.push('<circle cx="' + x(p.date).toFixed(1) + '" cy="' + y(p.value).toFixed(1) + '" r="3" fill="' + color + '"><title>' + esc(s.name + ' ' + p.date + '：' + p.value) + '</title></circle>');
+      });
+      /* 图例 */
+      parts.push('<g><rect x="' + (pad.l + si * 110) + '" y="2" width="10" height="10" rx="2" fill="' + color + '"/>' +
+        '<text x="' + (pad.l + si * 110 + 14) + '" y="11" font-size="11" fill="var(--text-soft)">' + esc(s.name) + '</text></g>');
+    });
+    parts.push('</svg>');
+    return parts.join('');
+  };
+
+  /* ---- 堆叠柱状图 ----
+     groups: [{label, parts:[{value, color?, name?}]}]
+     opts: {width, height, yFmt, onHint} */
+  C.barChart = function (groups, opts) {
+    opts = opts || {};
+    var W = opts.width || 720, H = opts.height || 220;
+    var pad = { l: 52, r: 14, t: 14, b: 26 };
+    groups = groups || [];
+    if (!groups.length) return emptySvg(W, H);
+    var totals = groups.map(function (g) { return U.sum(g.parts, function (p) { return p.value || 0; }); });
+    var maxV = Math.max.apply(null, totals.concat([1]));
+
+    var bw = (W - pad.l - pad.r) / groups.length;
+    var parts = ['<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '" role="img" class="chart">'];
+    for (var g = 0; g <= 4; g++) {
+      var vy = maxV * g / 4;
+      var yy = pad.t + (1 - g / 4) * (H - pad.t - pad.b);
+      parts.push('<line x1="' + pad.l + '" y1="' + yy + '" x2="' + (W - pad.r) + '" y2="' + yy + '" stroke="var(--border)" stroke-width="1"/>');
+      parts.push('<text x="' + (pad.l - 6) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="10" fill="var(--text-soft)">' + esc(opts.yFmt ? opts.yFmt(vy) : Math.round(vy)) + '</text>');
+    }
+    groups.forEach(function (grp, gi) {
+      var cx = pad.l + gi * bw + bw / 2;
+      var barW = Math.min(46, bw * 0.6);
+      var yCursor = pad.t + (H - pad.t - pad.b);
+      (grp.parts || []).forEach(function (p, pi) {
+        var h = (p.value || 0) / maxV * (H - pad.t - pad.b);
+        if (h <= 0) return;
+        yCursor -= h;
+        parts.push('<rect data-idx="' + gi + '" x="' + (cx - barW / 2) + '" y="' + yCursor.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + (p.color || C.PALETTE[pi % C.PALETTE.length]) + '" rx="2"><title>' + esc(grp.label + ' ' + (p.name || '') + '：' + (opts.yFmt ? opts.yFmt(p.value) : p.value)) + '</title></rect>');
+      });
+      parts.push('<text data-idx="' + gi + '" x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--text-soft)">' + esc(grp.label) + '</text>');
+    });
+    parts.push('</svg>');
+    return parts.join('');
+  };
+
+  /* ---- 热力格（周×周网格） ----
+     days: ['YYYY-MM-DD'...]（从周一开始，7 的倍数）
+     valueFn(date) -> number（分钟等）
+     opts: {cell, buckets:[阈值...]} */
+  C.heatGrid = function (days, valueFn, opts) {
+    opts = opts || {};
+    var cell = opts.cell || 14, gap = 3;
+    days = days || [];
+    if (!days.length) return emptySvg(300, 100);
+    var weeks = Math.ceil(days.length / 7);
+    var W = weeks * (cell + gap) + 30, H = 7 * (cell + gap) + 20;
+    var buckets = opts.buckets || [1, 30, 60, 120];
+    var parts = ['<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" class="chart">'];
+    days.forEach(function (d, i) {
+      var col = Math.floor(i / 7), row = i % 7;
+      var v = valueFn ? (valueFn(d) || 0) : 0;
+      var level = 0;
+      for (var b = 0; b < buckets.length; b++) if (v >= buckets[b]) level = b + 1;
+      var op = [0.12, 0.3, 0.5, 0.75, 1][level];
+      parts.push('<rect data-date="' + d + '" x="' + (26 + col * (cell + gap)) + '" y="' + (4 + row * (cell + gap)) + '" width="' + cell + '" height="' + cell + '" rx="3" fill="var(--mod-color, var(--primary))" fill-opacity="' + op + '" stroke="var(--border)" stroke-width="0.5"><title>' + esc(d + '：' + v + ' 分钟') + '</title></rect>');
+    });
+    ['一', '三', '五', '日'].forEach(function (w, i) {
+      parts.push('<text x="8" y="' + (4 + [0, 2, 4, 6][i] * (cell + gap) + cell - 3) + '" font-size="9" fill="var(--text-soft)">' + w + '</text>');
+    });
+    parts.push('</svg>');
+    return parts.join('');
+  };
+
+  App.charts = C;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/55-components.js ==== */
+/* 55-components.js — 跨模块复用的小组件：拖拽看板、状态/优先级胶囊等 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util;
+  var comp = {};
+  App.comp = comp;
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var D = App.dom;
+
+  /* ---- 看板拖拽：容器内 [data-drag-id] 元素可拖到 [data-col] 列 ---- */
+  comp.makeKanbanDraggable = function (boardEl, onDrop) {
+    var dragId = null;
+    boardEl.addEventListener('dragstart', function (e) {
+      var card = e.target.closest('[data-drag-id]');
+      if (!card) return;
+      dragId = card.dataset.dragId;
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', dragId); } catch (err) {}
+      card.classList.add('dragging');
+    });
+    boardEl.addEventListener('dragend', function () {
+      dragId = null;
+      boardEl.querySelectorAll('.dragging').forEach(function (el) { el.classList.remove('dragging'); });
+      boardEl.querySelectorAll('.col-over').forEach(function (el) { el.classList.remove('col-over'); });
+    });
+    boardEl.addEventListener('dragover', function (e) {
+      var col = e.target.closest('[data-col]');
+      if (!col || !dragId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      boardEl.querySelectorAll('.col-over').forEach(function (el) { if (el !== col) el.classList.remove('col-over'); });
+      col.classList.add('col-over');
+    });
+    boardEl.addEventListener('drop', function (e) {
+      var col = e.target.closest('[data-col]');
+      if (!col || !dragId) return;
+      e.preventDefault();
+      var status = col.dataset.col;
+      var id = dragId;
+      dragId = null;
+      onDrop(id, status);
+    });
+  };
+
+  /* ---- 通用拖拽（时间轴块等）：pointer 事件，15 分钟吸附由调用方处理 ---- */
+  comp.makePointerDrag = function (el, opts) {
+    /* opts: {onStart(e, el), onMove(dy, e), onEnd(dy, e), axis} */
+    el.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      if (opts.ignore && e.target.closest(opts.ignore)) return;
+      var startY = e.clientY, startX = e.clientX;
+      var moved = false;
+      if (opts.onStart) opts.onStart(e, el);
+      function mm(ev) {
+        var dy = ev.clientY - startY, dx = ev.clientX - startX;
+        if (Math.abs(dy) > 3 || Math.abs(dx) > 3) moved = true;
+        if (moved && opts.onMove) opts.onMove(dy, dx, ev);
+        ev.preventDefault();
+      }
+      function mu(ev) {
+        document.removeEventListener('mousemove', mm);
+        document.removeEventListener('mouseup', mu);
+        if (opts.onEnd) opts.onEnd(moved ? ev.clientY - startY : 0, moved ? ev.clientX - startX : 0, ev, moved);
+      }
+      document.addEventListener('mousemove', mm);
+      document.addEventListener('mouseup', mu);
+    });
+  };
+
+  /* ---- 胶囊标签（点击循环切换） ---- */
+  comp.capsule = function (text, opts) {
+    opts = opts || {};
+    var el = D.el('<span class="tag clickable' + (opts.on ? ' tag-on' : '') + '" title="' + U.esc(opts.title || '点击切换') + '">' + U.esc(text) + '</span>');
+    if (opts.onClick) el.addEventListener('click', function (e) { e.stopPropagation(); opts.onClick(); });
+    return el;
+  };
+
+  comp.cycleCapsule = function (value, list, onCycle, colorMap) {
+    return comp.capsule(value, {
+      on: !!(colorMap && colorMap[value] === 'on'),
+      title: '当前：' + value + '，点击切换',
+      onClick: function () {
+        var i = list.indexOf(value);
+        onCycle(list[(i + 1) % list.length]);
+      }
+    });
+  };
+
+  /* ---- 列表行内小按钮 ---- */
+  comp.iconBtn = function (icon, title, onClick, cls) {
+    var el = D.el('<button class="btn btn-ghost btn-small" title="' + U.esc(title) + '">' + icon + '</button>');
+    if (cls) el.classList.add(cls);
+    el.addEventListener('click', function (e) { e.stopPropagation(); onClick(); });
+    return el;
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/90-router.js ==== */
+/* 90-router.js — hash 路由（核心逻辑纯函数，可测试） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var R = {};
+  var routes = {};       // id -> {render, module}
+  var order = [];
+  var current = null;
+
+  R.register = function (id, render) {
+    if (!routes[id]) order.push(id);
+    routes[id] = { render: render };
+  };
+
+  R.ids = function () { return order.slice(); };
+
+  /* 解析 hash：'#/plan?d=2026-11-13' -> {id:'plan', params:{d:'...'}} */
+  R.parseHash = function (hash) {
+    var s = String(hash || '').replace(/^#\/?/, '');
+    var qi = s.indexOf('?');
+    var id = (qi === -1 ? s : s.slice(0, qi)) || 'home';
+    var params = {};
+    if (qi !== -1) {
+      s.slice(qi + 1).split('&').forEach(function (kv) {
+        if (!kv) return;
+        var p = kv.split('=');
+        params[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || '');
+      });
+    }
+    return { id: id, params: params };
+  };
+
+  R.has = function (id) { return Object.prototype.hasOwnProperty.call(routes, id); };
+
+  /* 供 app 层注入的钩子 */
+  R.onNavigate = null;
+
+  R.go = function (id, params) {
+    var h = '#/' + id;
+    if (params) {
+      var qs = Object.keys(params).map(function (k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+      }).join('&');
+      if (qs) h += '?' + qs;
+    }
+    if (typeof location !== 'undefined') location.hash = h;
+    else R.handle(h); // Node 测试环境
+  };
+
+  R.handle = function (hash) {
+    var r = R.parseHash(hash);
+    var id = R.has(r.id) ? r.id : 'home';
+    current = id;
+    if (R.onNavigate) R.onNavigate(id, r.params);
+    return id;
+  };
+
+  R.current = function () { return current; };
+
+  App.router = R;
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/99-app.js ==== */
+/* 99-app.js — 外壳初始化：侧边栏、顶栏、主题、路由挂载（浏览器环境） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, R = App.router;
+  var shell = {};
+  var scrollTops = {};
+  var lastModuleId = null;
+
+  /* ---------- 顶栏状态 ---------- */
+  shell.setSaveState = function (text, cls) {
+    var el = document.getElementById('save-state');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'save-state' + (cls ? ' ' + cls : '');
+  };
+
+  shell.setFileState = function (connected, fileName) {
+    var el = document.getElementById('file-state');
+    if (!el) return;
+    el.className = 'file-state ' + (connected ? 'file-state-on' : 'file-state-off');
+    el.textContent = connected ? ('● 已连接' + (fileName ? '：' + fileName : '')) : '● 未连接';
+    var banner = document.getElementById('net-banner');
+    if (banner) banner.hidden = !!connected;
+    syncBannerSpace();
+  };
+
+  function syncBannerSpace() {
+    var any = ['compat-banner', 'net-banner'].some(function (id) {
+      var el = document.getElementById(id);
+      return el && !el.hidden;
+    });
+    document.body.classList.toggle('has-banner', any);
+  }
+
+  shell.refreshTopDate = function () {
+    var el = document.getElementById('top-date');
+    if (!el) return;
+    var d = new Date();
+    el.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 周' + U.weekdayCN(U.today());
+  };
+
+  /* ---------- 主题与侧边栏（M1 后与 store 设置打通） ---------- */
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    try { localStorage.setItem('papp.theme', theme); } catch (e) {}
+  }
+  shell.applyTheme = applyTheme;
+
+  function applySidebar(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', !!collapsed);
+    try { localStorage.setItem('papp.sidebarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+  }
+  shell.applySidebar = applySidebar;
+
+  /* ---------- 视图渲染 ---------- */
+  shell.placeholder = function (view, mod) {
+    view.innerHTML =
+      '<h1 class="page-title">' + U.esc(mod.name) + '</h1>' +
+      '<p class="page-sub">模块 ' + mod.id + '</p>' +
+      '<div class="empty-state"><div class="empty-icon">🚧</div>本模块将在后续里程碑完成</div>';
+  };
+
+  shell.rerender = function () {
+    if (lastModuleId) renderModule(lastModuleId, R.parseHash(location.hash).params);
+  };
+
+  function renderModule(id, params) {
+    var view = document.getElementById('view');
+    var mod = App.modules.filter(function (m) { return m.id === id; })[0] || App.modules[0];
+    view.style.setProperty('--mod-color', 'var(' + mod.color + ')');
+    var renderer = R.has(id) ? R._renderers[id] : null;
+    if (renderer) {
+      try {
+        renderer(view, params || {});
+      } catch (err) {
+        view.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>页面渲染出错：' + U.esc(err && err.message) + '</div>';
+        if (typeof console !== 'undefined') console.error(err);
+      }
+    } else {
+      shell.placeholder(view, mod);
+    }
+  }
+
+  /* 在 router.register 之外单独存 render 函数，便于 shell 主动重渲染 */
+  R._renderers = {};
+  shell.registerPage = function (id, render) {
+    R._renderers[id] = render;
+    R.register(id, render);
+  };
+
+  /* ---------- 初始化 ---------- */
+  function buildNav() {
+    var nav = document.getElementById('nav');
+    nav.innerHTML = App.modules.map(function (m) {
+      return '<button class="nav-item" data-id="' + m.id + '" style="--mod-color:var(' + m.color + ')" title="' + U.esc(m.name) + '">' +
+        '<span class="nav-icon">' + m.icon + '</span><span class="nav-label">' + U.esc(m.name) + '</span></button>';
+    }).join('');
+    nav.addEventListener('click', function (e) {
+      var btn = e.target.closest('.nav-item');
+      if (btn) R.go(btn.dataset.id);
+    });
+  }
+
+  function highlightNav(id) {
+    document.querySelectorAll('.nav-item').forEach(function (el) {
+      el.classList.toggle('active', el.dataset.id === id);
+    });
+  }
+
+  function init() {
+    buildNav();
+
+    var theme = 'light';
+    try { theme = localStorage.getItem('papp.theme') || 'light'; } catch (e) {}
+    applyTheme(theme);
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme');
+      var next = cur === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      if (App.store && App.store.data && App.store.data.settings) {
+        App.store.data.settings.theme = next;
+        App.store.save();
+      }
+    });
+
+    var collapsed = false;
+    try { collapsed = localStorage.getItem('papp.sidebarCollapsed') === '1'; } catch (e) {}
+    applySidebar(collapsed);
+    document.getElementById('sidebar-toggle').addEventListener('click', function () {
+      var next = !document.body.classList.contains('sidebar-collapsed');
+      applySidebar(next);
+      if (App.store && App.store.data && App.store.data.settings) {
+        App.store.data.settings.sidebarCollapsed = next;
+        App.store.save();
+      }
+    });
+
+    shell.refreshTopDate();
+    setInterval(shell.refreshTopDate, 30000);
+
+    /* 兼容检测：核心链路只需 showOpenFilePicker（连接/读写）；save/dir 缺失由 persist 层自适应降级 */
+    var fsaOk = typeof window.showOpenFilePicker === 'function';
+    App.env = { fsaSupported: fsaOk };
+    if (!fsaOk) {
+      document.getElementById('compat-banner').hidden = false;
+    }
+    syncBannerSpace();
+
+    /* 数据文件横幅按钮 */
+    document.getElementById('net-banner-btn').addEventListener('click', function () {
+      if (App.persist && App.persist.connect) App.persist.connect();
+    });
+    document.getElementById('file-state').addEventListener('click', function () {
+      if (App.persist && App.persist.connect) App.persist.connect();
+    });
+
+    /* 路由 */
+    R.onNavigate = function (id) {
+      var view = document.getElementById('view');
+      if (lastModuleId) scrollTops[lastModuleId] = view.scrollTop;
+      lastModuleId = id;
+      highlightNav(id);
+      renderModule(id, R.parseHash(location.hash).params);
+      view.scrollTop = scrollTops[id] || 0;
+    };
+    window.addEventListener('hashchange', function () { R.handle(location.hash); });
+
+    /* 全局快捷键 */
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+        var ta = document.getElementById('memo-input');
+        if (ta) { e.preventDefault(); R.go('home'); setTimeout(function () { ta.focus(); }, 50); }
+        else if (R.current() === 'home') { e.preventDefault(); }
+      }
+    });
+
+    /* 初始文件状态 */
+    shell.setFileState(false);
+
+    /* 数据层先就绪（boot 的同步部分加载缓存），再渲染首屏 */
+    if (App.boot) App.boot();
+
+    if (!location.hash) location.hash = '#/home';
+    R.handle(location.hash);
+  }
+
+  shell.init = init;
+  App.shell = shell;
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  }
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/60-home.js ==== */
+/* 60-home.js — 首页总览：问候条、今日计划卡、快速备忘、模块摘要卡 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic;
+  var D = App.dom, store = App.store;
+
+  function render(view) {
+    var ui = App.ui;
+    App._view = view;
+    var today = U.today();
+    var data = store.data;
+    view.innerHTML = '';
+
+    /* 1 问候条 */
+    var ps = L.planSummary(data, today);
+    view.appendChild(D.el('<h1 class="page-title">' + U.greeting() + '，今天是 ' +
+      new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月' + new Date().getDate() + '日 周' + U.weekdayCN(today) + '</h1>' +
+      '<p class="page-sub">今日待办 ' + ps.todoDone + '/' + ps.todoTotal + ' 完成 · 日程 ' + ps.eventCount + ' 项</p>'));
+
+    /* 2 今日计划卡 */
+    var planCard = D.el('<div class="card"><div class="grid" style="grid-template-columns:1fr 1fr"></div></div>');
+    var grid = planCard.firstElementChild;
+    var evBox = D.el('<div><b class="small">今日日程</b><div style="margin-top:6px"></div></div>');
+    var evList = evBox.lastElementChild;
+    var events = data.plan.events.filter(function (e) { return e.date === today; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; });
+    if (!events.length) evList.appendChild(D.el('<div class="muted small">暂无日程</div>'));
+    events.slice(0, 5).forEach(function (e) {
+      var row = D.el('<div class="row small" style="padding:3px 0;cursor:pointer"><span class="muted" style="width:86px">' + e.start + '–' + e.end + '</span><span>' + U.esc(e.title) + '</span></div>');
+      row.addEventListener('click', function () { App.router.go('plan'); });
+      evList.appendChild(row);
+    });
+    grid.appendChild(evBox);
+
+    var tdBox = D.el('<div><b class="small">今日待办</b><div style="margin-top:6px"></div></div>');
+    var tdList = tdBox.lastElementChild;
+    var todos = data.plan.todos.filter(function (t) { return t.date === today && !t.done; }).slice(0, 5);
+    if (!todos.length) tdList.appendChild(D.el('<div class="muted small">待办都完成啦 🎉</div>'));
+    todos.forEach(function (t) {
+      var row = D.el('<div class="row small" style="padding:3px 0"><input type="checkbox" style="width:15px;height:15px"><span style="flex:1">' + U.esc(t.text) + '</span></div>');
+      row.querySelector('input').addEventListener('change', function () {
+        store.upsert('plan.todos', Object.assign({}, t, { done: true }));
+        render(view);
+      });
+      tdList.appendChild(row);
+    });
+    var link = D.el('<div class="small" style="margin-top:8px"><a href="#/plan" style="color:var(--mod-color)">共 ' + ps.todoTotal + ' 条，去今日计划 →</a></div>');
+    tdBox.appendChild(link);
+    grid.appendChild(tdBox);
+    view.appendChild(planCard);
+
+    /* 3 快速备忘 */
+    var memoCard = D.el('<div class="card mt16"><b>快速备忘</b><div class="muted small" style="margin:2px 0 8px">Ctrl+N 快速聚焦，随手记一条</div>' +
+      '<div class="row"><input class="input" id="memo-input" placeholder="记一笔…"><button class="btn btn-primary" id="memo-add">记一笔</button></div><div id="memo-list" style="margin-top:10px"></div></div>');
+    view.appendChild(memoCard);
+    var memoList = memoCard.querySelector('#memo-list');
+    function renderMemos() {
+      memoList.innerHTML = '';
+      var memos = data.memos.slice().sort(function (a, b) {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+      if (!memos.length) { memoList.appendChild(D.el('<div class="muted small">还没有备忘</div>')); return; }
+      memos.forEach(function (m) {
+        var row = D.el('<div class="row" style="padding:5px 2px;border-bottom:1px solid var(--border)">' +
+          (m.pinned ? '<span class="tag tag-on">置顶</span>' : '') +
+          '<span style="flex:1">' + U.nl2br(m.text) + '</span></div>');
+        row.appendChild(App.comp.iconBtn(m.pinned ? '📌' : '📍', m.pinned ? '取消置顶' : '置顶', function () {
+          store.upsert('memos', Object.assign({}, m, { pinned: !m.pinned }));
+          render(view);
+        }));
+        row.appendChild(App.comp.iconBtn('🗑', '删除备忘', function () {
+          ui.confirm({ title: '删除备忘', text: '删除「' + m.text.slice(0, 30) + '」？', danger: true }).then(function (ok) {
+            if (ok) { store.remove('memos', m.id); render(view); }
+          });
+        }));
+        memoList.appendChild(row);
+      });
+    }
+    function addMemo() {
+      var input = memoCard.querySelector('#memo-input');
+      var text = input.value.trim();
+      if (!text) { input.focus(); return; }
+      store.upsert('memos', { id: U.uid(), text: text, pinned: false, createdAt: new Date().toISOString() });
+      input.value = '';
+      render(view);
+      var ni = document.getElementById('memo-input');
+      if (ni) ni.focus();
+    }
+    memoCard.querySelector('#memo-add').addEventListener('click', addMemo);
+    memoCard.querySelector('#memo-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') addMemo(); });
+    renderMemos();
+
+    /* 4 模块摘要卡 */
+    view.appendChild(D.el('<div class="section-title">各模块摘要</div>'));
+    var cards = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr)"></div>');
+    function card(mod, title, lines, onClick) {
+      var el = D.el('<div class="card" style="cursor:pointer;border-top:3px solid var(' + mod.color + ')">' +
+        '<b class="small">' + U.esc(mod.name) + '</b><div style="margin-top:6px;font-size:13px;line-height:1.7">' +
+        lines.map(function (l) { return '<div>' + l + '</div>'; }).join('') + '</div></div>');
+      el.addEventListener('click', onClick);
+      cards.appendChild(el);
+      return el;
+    }
+    var M = {};
+    App.modules.forEach(function (m) { M[m.id] = m; });
+
+    var ns = L.nextSchedule(data.media.schedule, today);
+    card(M.media, '', [
+      ns ? U.esc((ns.status === '计划中' ? '下次发布：' : '最近发布：') + U.fmtDateCN(ns.date) + ' ' + U.esc(ns.platform || '') + '《' + ns.title + '》') : '<span class="muted">暂无发布计划</span>',
+      '<span class="muted small">选题 ' + data.media.topics.filter(function (t) { return t.status !== '已放弃' && t.status !== '已发布'; }).length + ' 个进行中</span>'
+    ], function () { App.router.go('media'); });
+
+    var ds = L.devSummary(data.dev.projects);
+    card(M.dev, '', [
+      '进行中项目 <b>' + ds.inProgressCount + '</b> 个',
+      ds.latestNextStep ? '下一步：' + U.esc(ds.latestNextStep) : '<span class="muted">暂无项目</span>'
+    ], function () { App.router.go('dev'); });
+
+    var cs = L.incomeMonthSummary(data.consult.incomes, U.monthOf(today));
+    card(M.consult, '', [
+      '本月收入 <b>¥' + U.fmtMoney(cs.received) + '</b>',
+      cs.unreceivedCount ? '未收 ' + cs.unreceivedCount + ' 笔 ¥' + U.fmtMoney(cs.unreceived) : '<span class="muted">无未收款</span>'
+    ], function () { App.router.go('consult'); });
+
+    var streak = L.streakDays(data.study.checkins, today);
+    card(M.study, '', [
+      '连续打卡 <b>' + streak + '</b> 天',
+      data.study.checkins[today] ? '今日已学 ' + U.fmtMinutes(data.study.checkins[today].minutes) : '<span class="muted">今天还没打卡</span>'
+    ], function () { App.router.go('study'); });
+
+    var ws = L.weightSummary(data.diet.weights);
+    var eaten = L.dietTodayDone(data.diet.records, today);
+    card(M.diet, '', [
+      '今日三餐已记 ' + eaten + '/3',
+      ws ? '最近体重 ' + ws.latest.kg + ' kg（' + (ws.change > 0 ? '+' : '') + ws.change.toFixed(1) + '）' : '<span class="muted">暂无体重记录</span>'
+    ], function () { App.router.go('diet'); });
+
+    card(M.fun, '', [
+      '本周娱乐 ' + U.fmtMinutes(L.funWeekMinutes(data.fun.records, today)),
+      '<span class="muted small">本月 ' + U.fmtMinutes(L.funMonthMinutes(data.fun.records, today)) + '</span>'
+    ], function () { App.router.go('fun'); });
+
+    view.appendChild(cards);
+  }
+
+  App.shell.registerPage('home', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/61-plan.js ==== */
+/* 61-plan.js — 今日计划页：时间轴日程（拖拽）＋待办（顺延）＋每日回顾
+   timelineLayout 为纯函数，可 Node 测试 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  var U = App.util, L = App.logic;
+  var P = {};
+  App.planPage = P;
+
+  P.DAY_START = 6 * 60;
+  P.DAY_END = 24 * 60;
+  P.HOUR_PX = 44;
+
+  /* ---- 纯布局：重叠日程分列 ----
+     返回 [{id, start, end, col, colCount}]，colCount 为所属重叠簇的列数 */
+  P.timelineLayout = function (events) {
+    var items = (events || []).map(function (e) {
+      return { id: e.id, start: U.timeToMin(e.start), end: U.timeToMin(e.end), col: 0, colCount: 1 };
+    }).sort(function (a, b) { return a.start - b.start || a.end - b.end; });
+
+    /* 贪心分列 */
+    var colEnds = [];
+    items.forEach(function (it) {
+      var col = -1;
+      for (var c = 0; c < colEnds.length; c++) if (colEnds[c] <= it.start) { col = c; break; }
+      if (col === -1) { col = colEnds.length; colEnds.push(0); }
+      colEnds[col] = it.end;
+      it.col = col;
+    });
+
+    /* 传递性重叠簇 → 簇内列数 */
+    var cluster = [];
+    var clusterEnd = -1;
+    function flush() {
+      var n = 0;
+      cluster.forEach(function (it) { n = Math.max(n, it.col + 1); });
+      cluster.forEach(function (it) { it.colCount = n; });
+      cluster = [];
+    }
+    items.forEach(function (it) {
+      if (cluster.length && it.start >= clusterEnd) flush();
+      cluster.push(it);
+      clusterEnd = Math.max(clusterEnd, it.end);
+      if (it.start >= clusterEnd) { flush(); clusterEnd = -1; }
+    });
+    flush();
+    return items;
+  };
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var D = App.dom, ui = null; // ui 在渲染时取（App.ui 由 50-dom 注入）
+  var store = App.store;
+  var currentDate = U.today();
+  var carryMsgDismissed = false;
+
+  function hourPx() { return P.HOUR_PX; }
+
+  function eventModal(ev, date) {
+    ui = App.ui;
+    ui.modal({
+      title: ev ? '编辑日程' : '添加日程',
+      values: ev || { date: date, start: '09:00', end: '10:00' },
+      fields: [
+        { key: 'title', label: '事项', type: 'text', required: true, placeholder: '做什么？' },
+        { key: 'start', label: '开始时间', type: 'time', required: true },
+        { key: 'end', label: '结束时间', type: 'time', required: true, validate: function (v, vals) { return L.validateTimeRange(vals.start, v); } },
+        { key: 'note', label: '备注（选填）', type: 'textarea', rows: 2 }
+      ],
+      onDelete: ev ? function () { store.remove('plan.events', ev.id); render(App._view, { d: currentDate }); } : null,
+      deleteText: '删除这条日程「' + (ev ? ev.title : '') + '」？',
+      onSubmit: function (vals) {
+        var overlaps = L.countOverlaps(store.data.plan.events, date, vals.start, vals.end, ev ? ev.id : null);
+        store.upsert('plan.events', {
+          id: ev ? ev.id : U.uid(), date: date, start: vals.start, end: vals.end,
+          title: vals.title, note: vals.note
+        });
+        if (overlaps > 0) ui.toast('提示：该时段与 ' + overlaps + ' 条已有安排重叠', true);
+        render(App._view, { d: currentDate });
+        return null;
+      }
+    });
+  }
+
+  function renderTimeline(card, date) {
+    var events = store.data.plan.events.filter(function (e) { return e.date === date; });
+    var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:10px">' +
+      '<b>时间轴日程</b><button class="btn btn-small btn-primary">＋ 添加日程</button></div>');
+    head.querySelector('button').addEventListener('click', function () { eventModal(null, date); });
+    card.appendChild(head);
+
+    var layout = P.timelineLayout(events);
+    var totalH = (P.DAY_END - P.DAY_START) / 60 * hourPx();
+    var wrap = D.el('<div style="position:relative;height:' + totalH + 'px;border-left:1px solid var(--border);margin-left:44px">');
+    /* 小时刻度 */
+    for (var h = P.DAY_START / 60; h <= P.DAY_END / 60; h += 2) {
+      var y = (h * 60 - P.DAY_START) / 60 * hourPx();
+      wrap.appendChild(D.el('<div style="position:absolute;left:-44px;top:' + (y - 7) + 'px;width:38px;text-align:right;font-size:10px;color:var(--text-soft)">' + U.pad2(h) + ':00</div>'));
+      wrap.appendChild(D.el('<div style="position:absolute;left:0;right:0;top:' + y + 'px;border-top:1px dashed var(--border)"></div>'));
+    }
+    if (!layout.length) {
+      wrap.appendChild(D.el('<div class="muted small" style="position:absolute;left:8px;top:8px">今天还没有日程，点右上「＋ 添加日程」</div>'));
+    }
+    layout.forEach(function (it) {
+      var ev = events.filter(function (e) { return e.id === it.id; })[0];
+      var top = (it.start - P.DAY_START) / 60 * hourPx();
+      var hpx = Math.max(20, (it.end - it.start) / 60 * hourPx() - 2);
+      var wPct = 100 / it.colCount;
+      var block = D.el('<div class="card ev-block" style="position:absolute;top:' + top + 'px;height:' + hpx + 'px;' +
+        'left:calc(' + (it.col * wPct) + '% + 2px);width:calc(' + wPct + '% - 6px);padding:4px 8px;cursor:grab;overflow:hidden;' +
+        'border-left:3px solid var(--mod-color);background:var(--bg-soft)">' +
+        '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + U.esc(ev.title) + '</div>' +
+        '<div class="muted" style="font-size:10px">' + ev.start + '–' + ev.end + '</div>' +
+        '<div class="ev-resize" style="position:absolute;left:0;right:0;bottom:0;height:6px;cursor:ns-resize"></div></div>');
+      block.title = ev.title + '（拖拽移动，底边改时长，点击编辑）';
+      /* 点击编辑（未拖动时） */
+      App.comp.makePointerDrag(block, {
+        ignore: '.ev-resize',
+        onEnd: function (dy, dx, e, moved) {
+          if (!moved) { eventModal(ev, date); return; }
+          var dm = Math.round(dy / hourPx() * 60 / 15) * 15;
+          if (!dm) return;
+          var ns = U.clamp(it.start + dm, P.DAY_START, P.DAY_END - 15);
+          var shift = ns - it.start;
+          store.upsert('plan.events', Object.assign({}, ev, {
+            start: U.minToTime(it.start + shift), end: U.minToTime(Math.min(P.DAY_END, it.end + shift))
+          }));
+          render(App._view, { d: currentDate });
+        },
+        onMove: function (dy) { block.style.transform = 'translateY(' + dy + 'px)'; block.style.opacity = '.8'; }
+      });
+      /* 底边拉伸改时长 */
+      App.comp.makePointerDrag(block.querySelector('.ev-resize'), {
+        onEnd: function (dy, dx, e, moved) {
+          if (!moved) return;
+          var dm = Math.round(dy / hourPx() * 60 / 15) * 15;
+          var ne = U.clamp(it.end + dm, it.start + 15, P.DAY_END);
+          store.upsert('plan.events', Object.assign({}, ev, { end: U.minToTime(ne) }));
+          render(App._view, { d: currentDate });
+        },
+        onMove: function (dy) { block.style.height = Math.max(20, hpx + dy) + 'px'; }
+      });
+      wrap.appendChild(block);
+    });
+    card.appendChild(wrap);
+  }
+
+  function renderTodos(card, date) {
+    var todos = store.data.plan.todos.filter(function (t) { return t.date === date; });
+    todos.sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var pr = { '高': 0, '中': 1, '低': 2 };
+      return pr[a.priority] - pr[b.priority];
+    });
+    var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:10px"><b>待办清单</b>' +
+      '<span class="muted small">' + todos.filter(function (t) { return t.done; }).length + '/' + todos.length + ' 完成</span></div>');
+    card.appendChild(head);
+
+    var add = D.el('<div class="row" style="margin-bottom:10px"><input class="input" id="todo-quick" placeholder="输入待办，回车添加"></div>');
+    card.appendChild(add);
+    add.querySelector('input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.target.value.trim()) {
+        store.upsert('plan.todos', { id: U.uid(), date: date, text: e.target.value.trim(), priority: '中', done: false });
+        render(App._view, { d: currentDate });
+      }
+    });
+
+    if (!todos.length) {
+      card.appendChild(ui.emptyState('✅', '今天还没有待办', null, null));
+      return;
+    }
+    var list = D.el('<div></div>');
+    todos.forEach(function (t) {
+      var row = D.el('<div class="row" style="padding:6px 4px;border-bottom:1px solid var(--border);' + (t.done ? 'opacity:.55' : '') + '">' +
+        '<input type="checkbox"' + (t.done ? ' checked' : '') + ' style="width:16px;height:16px">' +
+        '<span style="flex:1;' + (t.done ? 'text-decoration:line-through' : '') + '">' + U.esc(t.text) + '</span></div>');
+      if (t.carriedFrom) row.querySelector('span').appendChild(D.el('<span class="tag" style="margin-left:6px;font-size:10px">顺延自 ' + U.fmtDateCN(t.carriedFrom) + '</span>'));
+      row.querySelector('input').addEventListener('change', function (e) {
+        store.upsert('plan.todos', Object.assign({}, t, { done: e.target.checked }));
+        render(App._view, { d: currentDate });
+      });
+      row.appendChild(App.comp.cycleCapsule(t.priority, ['高', '中', '低'], function (np) {
+        store.upsert('plan.todos', Object.assign({}, t, { priority: np }));
+        render(App._view, { d: currentDate });
+      }));
+      row.appendChild(App.comp.iconBtn('🗑', '删除待办', function () {
+        ui.confirm({ title: '删除待办', text: '删除「' + t.text + '」？', danger: true }).then(function (ok) {
+          if (ok) { store.remove('plan.todos', t.id); render(App._view, { d: currentDate }); }
+        });
+      }));
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+  }
+
+  function render(view, params) {
+    ui = App.ui;
+    App._view = view;
+    currentDate = (params && params.d && U.isValidDateStr(params.d)) ? params.d : U.today();
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">今日计划</h1><p class="page-sub">时间安排、待办与每日回顾</p>'));
+
+    /* 自动顺延（幂等） */
+    var carried = L.carryOverTodos(store.data, U.today());
+    if (carried > 0) { store.commit(); carryMsgDismissed = false; }
+    if (carried > 0 && !carryMsgDismissed) {
+      var banner = D.el('<div class="banner banner-warn" style="border-radius:8px;margin-bottom:12px"><span>已为你顺延 ' + carried + ' 条未完成待办到今天</span><button class="btn btn-small">知道了</button></div>');
+      banner.querySelector('button').addEventListener('click', function () { carryMsgDismissed = true; banner.remove(); });
+      view.appendChild(banner);
+    }
+
+    var nav = ui.dateNav(currentDate, function (d) { render(view, { d: d }); });
+    view.appendChild(nav);
+
+    var grid = D.el('<div class="grid" style="grid-template-columns:1fr 1fr;align-items:start"></div>');
+    var tlCard = D.el('<div class="card"></div>');
+    var todoCard = D.el('<div class="card"></div>');
+    renderTimeline(tlCard, currentDate);
+    renderTodos(todoCard, currentDate);
+    grid.appendChild(tlCard); grid.appendChild(todoCard);
+    view.appendChild(grid);
+
+    /* 每日回顾 */
+    var reviewCard = D.el('<div class="card mt16"><b>每日回顾</b><div class="muted small" style="margin:4px 0 8px">今天过得怎么样？随手写两句，自动保存</div></div>');
+    var ta = D.el('<textarea class="textarea" rows="3" placeholder="今天完成了什么、有什么想法…">' + U.esc(store.data.plan.reviews[currentDate] || '') + '</textarea>');
+    ta.addEventListener('input', function () {
+      store.mapSet('plan.reviews', currentDate, ta.value);
+    });
+    reviewCard.appendChild(ta);
+    view.appendChild(reviewCard);
+  }
+
+  App.shell.registerPage('plan', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/62-media.js ==== */
+/* 62-media.js — 自媒体：选题库 │ 发布计划 │ 数据统计 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var TAB = 'topics', VIEW = 'week', METRIC = 'views', RANGE = '30';
+  var TOPIC_STATUS = ['灵感', '制作中', '已发布', '已放弃'];
+
+  function platforms() { return store.data.settings.platforms || []; }
+
+  function topicModal(t) {
+    App.ui.modal({
+      title: t ? '编辑选题' : '新选题',
+      values: t || { status: '灵感' },
+      fields: [
+        { key: 'title', label: '选题标题', type: 'text', required: true },
+        { key: 'desc', label: '一句话说明', type: 'text' },
+        { key: 'status', label: '状态', type: 'select', options: TOPIC_STATUS },
+        { key: 'note', label: '备注', type: 'textarea', rows: 2 }
+      ],
+      onDelete: t ? function () { store.remove('media.topics', t.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('media.topics', Object.assign({}, t, {
+          id: t ? t.id : U.uid(), title: v.title, desc: v.desc, status: v.status, note: v.note,
+          createdAt: t ? t.createdAt : new Date().toISOString()
+        }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function scheduleModal(s) {
+    var topics = store.data.media.topics;
+    App.ui.modal({
+      title: s ? '编辑发布计划' : '新发布计划',
+      values: s || { date: U.today(), platform: platforms()[0] || '', status: '计划中' },
+      fields: [
+        { key: 'title', label: '内容标题', type: 'text', required: true },
+        { key: 'date', label: '发布日期', type: 'date', required: true },
+        { key: 'platform', label: '平台', type: 'select', options: platforms() },
+        { key: 'status', label: '状态', type: 'select', options: ['计划中', '已发布'] },
+        { key: 'topicId', label: '关联选题（选填）', type: 'select', options: [{ value: '', label: '（不关联）' }].concat(topics.map(function (t) { return { value: t.id, label: t.title }; })) }
+      ],
+      onDelete: s ? function () { store.remove('media.schedule', s.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('media.schedule', Object.assign({}, s, {
+          id: s ? s.id : U.uid(), title: v.title, date: v.date, platform: v.platform,
+          status: v.status, topicId: v.topicId || null
+        }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function markPublished(s) {
+    App.ui.modal({
+      title: '标记已发布 · 顺手记个初始数据',
+      values: { views: null, likes: null },
+      fields: [
+        { key: 'views', label: '播放量（选填）', type: 'number', min: 0 },
+        { key: 'likes', label: '点赞数（选填）', type: 'number', min: 0 }
+      ],
+      submitText: '保存（可跳过）',
+      onSubmit: function (v) {
+        store.upsert('media.schedule', Object.assign({}, s, { status: '已发布' }));
+        if (v.views != null || v.likes != null) {
+          store.upsert('media.stats', { id: U.uid(), platform: s.platform, date: U.today(), views: v.views, likes: v.likes, fans: null });
+        }
+        var topic = store.data.media.topics.filter(function (t) { return t.id === s.topicId; })[0];
+        if (topic && topic.status !== '已发布') {
+          store.upsert('media.topics', Object.assign({}, topic, { status: '已发布' }));
+        }
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function renderTopics(box) {
+    var ui = App.ui;
+    var add = D.el('<div class="row" style="margin-bottom:12px"><input class="input" placeholder="快速记一个选题灵感，回车添加"><button class="btn btn-primary">＋ 新选题</button></div>');
+    var input = add.querySelector('input');
+    function quick() {
+      var t = input.value.trim();
+      if (!t) return;
+      store.upsert('media.topics', { id: U.uid(), title: t, desc: '', status: '灵感', note: '', createdAt: new Date().toISOString() });
+      input.value = '';
+      rerender();
+    }
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') quick(); });
+    add.querySelector('button').addEventListener('click', function () { topicModal(null); });
+    box.appendChild(add);
+
+    var filters = D.el('<div class="row" style="margin-bottom:12px"></div>');
+    ['全部'].concat(TOPIC_STATUS).forEach(function (st) {
+      var on = (TAB === 'topics:' + st) || (st === '全部' && TAB === 'topics');
+      filters.appendChild(App.comp.capsule(st, { on: on, onClick: function () { TAB = st === '全部' ? 'topics' : 'topics:' + st; rerender(); } }));
+    });
+    box.appendChild(filters);
+
+    var list = store.data.media.topics.slice().sort(function (a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+    var cur = TAB.indexOf('topics:') === 0 ? TAB.slice(7) : null;
+    if (cur) list = list.filter(function (t) { return t.status === cur; });
+    if (!list.length) { box.appendChild(ui.emptyState('💡', '还没有选题，上面输入框记一个灵感', '＋ 新选题', function () { topicModal(null); })); return; }
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr)"></div>');
+    list.forEach(function (t) {
+      var card = D.el('<div class="card" style="padding:12px 14px"><div class="row" style="justify-content:space-between"><b>' + U.esc(t.title) + '</b></div>' +
+        (t.desc ? '<div class="muted small" style="margin:6px 0">' + U.esc(t.desc) + '</div>' : '<div style="height:6px"></div>') +
+        '<div class="row small muted"><span class="tag">' + U.esc(t.status) + '</span><span>' + U.fmtDateCN((t.createdAt || '').slice(0, 10)) + '</span></div>' +
+        '<div class="row mt8"></div></div>');
+      var acts = card.querySelector('.row.mt8');
+      acts.appendChild(App.comp.cycleCapsule(t.status, TOPIC_STATUS, function (ns) {
+        store.upsert('media.topics', Object.assign({}, t, { status: ns }));
+        rerender();
+      }));
+      acts.appendChild(App.comp.iconBtn('📅', '排入发布计划', function () {
+        scheduleModal({ date: U.today(), platform: platforms()[0] || '', status: '计划中', title: t.title, topicId: t.id });
+      }));
+      acts.appendChild(App.comp.iconBtn('✏️', '编辑', function () { topicModal(t); }));
+      acts.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除选题', text: '删除「' + t.title + '」？', danger: true }).then(function (ok) { if (ok) { store.remove('media.topics', t.id); rerender(); } });
+      }));
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
+  function renderSchedule(box) {
+    var ui = App.ui;
+    var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="row"></div><button class="btn btn-primary">＋ 新发布计划</button></div>');
+    head.querySelector('button').addEventListener('click', function () { scheduleModal(null); });
+    var views = head.querySelector('.row');
+    [['week', '本周'], ['month', '本月'], ['all', '全部'], ['done', '已发布']].forEach(function (v) {
+      views.appendChild(App.comp.capsule(v[1], { on: VIEW === v[0], onClick: function () { VIEW = v[0]; rerender(); } }));
+    });
+    box.appendChild(head);
+
+    var today = U.today();
+    var mon = U.mondayOf(today);
+    var list = store.data.media.schedule.slice().sort(U.byDateDesc);
+    if (VIEW === 'week') list = list.filter(function (s) { return s.date >= mon && s.date <= U.addDays(mon, 6); });
+    else if (VIEW === 'month') list = list.filter(function (s) { return U.monthOf(s.date) === U.monthOf(today); });
+    else if (VIEW === 'done') list = list.filter(function (s) { return s.status === '已发布'; });
+
+    if (!list.length) { box.appendChild(ui.emptyState('📅', '这个视图下还没有发布计划', '＋ 新发布计划', function () { scheduleModal(null); })); return; }
+    var groups = U.groupBy(list, function (s) { return s.date; });
+    groups.forEach(function (items, date) {
+      box.appendChild(D.el('<div class="section-title" style="margin:10px 0 6px">' + U.fmtDateCN(date) + ' 周' + U.weekdayCN(date) + (date === today ? '（今天）' : '') + '</div>'));
+      items.forEach(function (s) {
+        var row = D.el('<div class="card row" style="padding:10px 14px;margin-bottom:8px">' +
+          '<span class="tag">' + U.esc(s.platform || '未定平台') + '</span>' +
+          '<span style="flex:1">' + U.esc(s.title) + '</span></div>');
+        row.appendChild(App.comp.capsule(s.status, {
+          on: s.status === '已发布',
+          onClick: function () { if (s.status === '计划中') markPublished(s); else { store.upsert('media.schedule', Object.assign({}, s, { status: '计划中' })); rerender(); } }
+        }));
+        row.appendChild(App.comp.iconBtn('✏️', '编辑', function () { scheduleModal(s); }));
+        row.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+          ui.confirm({ title: '删除发布计划', text: '删除「' + s.title + '」？', danger: true }).then(function (ok) { if (ok) { store.remove('media.schedule', s.id); rerender(); } });
+        }));
+        box.appendChild(row);
+      });
+    });
+  }
+
+  function renderStats(box) {
+    var ui = App.ui;
+    var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="row">' +
+      '<select class="select" style="width:110px"><option value="views">播放量</option><option value="likes">点赞数</option><option value="fans">粉丝数</option></select>' +
+      '<select class="select" style="width:110px"><option value="30">近 30 天</option><option value="90">近 90 天</option><option value="all">全部</option></select>' +
+      '</div><button class="btn btn-primary">＋ 录入数据</button></div>');
+    var selM = head.querySelectorAll('select')[0], selR = head.querySelectorAll('select')[1];
+    selM.value = METRIC; selR.value = RANGE;
+    selM.addEventListener('change', function () { METRIC = selM.value; rerender(); });
+    selR.addEventListener('change', function () { RANGE = selR.value; rerender(); });
+    head.querySelector('button').addEventListener('click', function () { statModal(null); });
+    box.appendChild(head);
+
+    function statModal(s) {
+      ui.modal({
+        title: s ? '编辑数据记录' : '录入平台数据',
+        values: s || { date: U.today(), platform: platforms()[0] || '' },
+        fields: [
+          { key: 'platform', label: '平台', type: 'select', options: platforms(), required: true },
+          { key: 'date', label: '日期', type: 'date', required: true },
+          { key: 'views', label: '播放量', type: 'number', min: 0 },
+          { key: 'likes', label: '点赞数', type: 'number', min: 0 },
+          { key: 'fans', label: '粉丝总数', type: 'number', min: 0 }
+        ],
+        onDelete: s ? function () { store.remove('media.stats', s.id); rerender(); } : null,
+        onSubmit: function (v) {
+          store.upsert('media.stats', Object.assign({}, s, { id: s ? s.id : U.uid(), platform: v.platform, date: v.date, views: v.views, likes: v.likes, fans: v.fans }));
+          rerender();
+          return null;
+        }
+      });
+    }
+
+    var today = U.today();
+    var from = RANGE === 'all' ? '0000-00-00' : U.addDays(today, -(+RANGE - 1));
+    var series = L.statsSeries(store.data.media.stats, METRIC, from, today);
+    var chartBox = D.el('<div class="card"></div>');
+    chartBox.innerHTML = App.charts.lineChart(series.map(function (s) { return { name: s.platform, points: s.points }; }), { from: RANGE === 'all' ? undefined : from, to: today });
+    box.appendChild(chartBox);
+
+    var recs = store.data.media.stats.slice().sort(U.byDateDesc);
+    if (!recs.length) { box.appendChild(D.el('<div class="mt12"></div>')); box.lastChild.appendChild(ui.emptyState('📈', '还没有数据记录，点右上录入', null, null)); return; }
+    var tbl = D.el('<table class="tbl mt12"><thead><tr><th>日期</th><th>平台</th><th>播放</th><th>点赞</th><th>粉丝</th><th></th></tr></thead><tbody></tbody></table>');
+    var tb = tbl.querySelector('tbody');
+    recs.forEach(function (r) {
+      var tr = D.el('<tr><td>' + r.date + '</td><td>' + U.esc(r.platform) + '</td><td>' + (r.views == null ? '—' : r.views) + '</td><td>' + (r.likes == null ? '—' : r.likes) + '</td><td>' + (r.fans == null ? '—' : r.fans) + '</td><td></td></tr>');
+      var td = tr.lastElementChild;
+      td.appendChild(App.comp.iconBtn('✏️', '编辑', function () { statModal(r); }));
+      td.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除记录', text: '删除 ' + r.date + ' ' + r.platform + ' 的数据？', danger: true }).then(function (ok) { if (ok) { store.remove('media.stats', r.id); rerender(); } });
+      }));
+      tb.appendChild(tr);
+    });
+    box.appendChild(tbl);
+  }
+
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">自媒体</h1><p class="page-sub">选题 → 排期 → 发布 → 数据</p>'));
+    var tab = TAB.indexOf('topics') === 0 ? 'topics' : TAB;
+    var tabs = App.ui.tabs([{ id: 'topics', label: '选题库' }, { id: 'schedule', label: '发布计划' }, { id: 'stats', label: '数据统计' }], tab, function (id) { TAB = id; rerender(); });
+    view.appendChild(tabs);
+    var box = D.el('<div></div>');
+    view.appendChild(box);
+    if (tab === 'topics') renderTopics(box);
+    else if (tab === 'schedule') renderSchedule(box);
+    else renderStats(box);
+  }
+
+  App.shell.registerPage('media', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/63-dev.js ==== */
+/* 63-dev.js — 开发工作：四列看板（拖拽换状态）＋项目详情（进展记录时间线） */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var COLS = ['未开始', '进行中', '暂停', '已完成'];
+  var doneExpanded = false;
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+
+  function projectModal(p) {
+    App.ui.modal({
+      title: p ? '编辑项目：' + p.name : '新项目',
+      wide: true,
+      values: p || { status: '未开始', progress: 0 },
+      fields: [
+        { key: 'name', label: '项目名称', type: 'text', required: true },
+        { key: 'status', label: '状态', type: 'select', options: COLS },
+        { key: 'progress', label: '完成进度', type: 'slider', min: 0, max: 100, step: 5, unit: '%' },
+        { key: 'nextStep', label: '下一步要做什么', type: 'text', placeholder: '一句话，回到项目时一眼看到' },
+        { key: 'due', label: '截止日期（选填）', type: 'date' },
+        { key: 'note', label: '备注', type: 'textarea', rows: 3 }
+      ],
+      onDelete: p ? function () {
+        store.remove('dev.projects', p.id);
+        rerender();
+      } : null,
+      onSubmit: function (v) {
+        var old = p || { status: v.status, progress: v.progress, nextStep: '' };
+        var changed = L.projectChangeLog(old, v);
+        var logs = (p && p.logs ? p.logs.slice() : []);
+        if (changed) logs.push({ time: new Date().toISOString(), text: changed, auto: true });
+        store.upsert('dev.projects', {
+          id: p ? p.id : U.uid(), name: v.name, status: v.status, progress: v.progress,
+          nextStep: v.nextStep, note: v.note, due: v.due || null,
+          updated: new Date().toISOString(), logs: logs
+        });
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function detailModal(p) {
+    var box = App.ui.modal({
+      title: '项目详情：' + p.name,
+      wide: true,
+      values: p,
+      fields: [
+        { key: 'name', label: '项目名称', type: 'text', required: true },
+        { key: 'status', label: '状态', type: 'select', options: COLS },
+        { key: 'progress', label: '完成进度', type: 'slider', min: 0, max: 100, step: 5, unit: '%' },
+        { key: 'nextStep', label: '下一步要做什么', type: 'text' },
+        { key: 'due', label: '截止日期（选填）', type: 'date' },
+        { key: 'note', label: '备注', type: 'textarea', rows: 3 }
+      ],
+      onDelete: function () {
+        store.remove('dev.projects', p.id);
+        rerender();
+      },
+      onSubmit: function (v) {
+        var changed = L.projectChangeLog(p, v);
+        var logs = p.logs.slice();
+        if (changed) logs.push({ time: new Date().toISOString(), text: changed, auto: true });
+        store.upsert('dev.projects', Object.assign({}, p, {
+          name: v.name, status: v.status, progress: v.progress, nextStep: v.nextStep,
+          note: v.note, due: v.due || null, updated: new Date().toISOString(), logs: logs
+        }));
+        rerender();
+        return null;
+      }
+    });
+    /* 进展记录时间线 + 手动补记：追加到弹窗内 */
+    var mask = document.querySelector('#modal-root .modal-mask:last-child');
+    if (mask) {
+      var form = mask.querySelector('form');
+      var sec = D.el('<div class="section-title" style="margin-top:6px">进展记录</div><div class="log-list" style="max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px"></div>' +
+        '<div class="row mt8"><input class="input" placeholder="手动补记一条进展…"><button type="button" class="btn btn-small">添加</button></div>');
+      var listEl = sec.querySelector('.log-list');
+      function drawLogs() {
+        var cur = store.data.dev.projects.filter(function (x) { return x.id === p.id; })[0] || p;
+        listEl.innerHTML = '';
+        if (!cur.logs.length) listEl.appendChild(D.el('<div class="muted">暂无进展记录</div>'));
+        cur.logs.slice().reverse().forEach(function (lg) {
+          listEl.appendChild(D.el('<div style="padding:3px 0;border-bottom:1px dashed var(--border)"><span class="muted">' + U.esc(lg.time.slice(0, 16).replace('T', ' ')) + (lg.auto ? ' · 自动' : '') + '</span> ' + U.esc(lg.text) + '</div>'));
+        });
+      }
+      drawLogs();
+      sec.querySelector('button').addEventListener('click', function () {
+        var input = sec.querySelector('input');
+        var t = input.value.trim();
+        if (!t) return;
+        var cur = store.data.dev.projects.filter(function (x) { return x.id === p.id; })[0];
+        if (!cur) return;
+        var logs = cur.logs.slice();
+        logs.push({ time: new Date().toISOString(), text: t, auto: false });
+        store.upsert('dev.projects', Object.assign({}, cur, { logs: logs, updated: new Date().toISOString() }));
+        input.value = '';
+        drawLogs();
+        rerender();
+      });
+      form.insertBefore(sec, form.querySelector('.modal-actions'));
+    }
+    return box;
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">开发工作</h1><p class="page-sub">拖拽卡片换列即改状态；点卡片看详情与进展记录</p>'));
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 新项目</button></div>');
+    head.querySelector('button').addEventListener('click', function () { projectModal(null); });
+    view.appendChild(head);
+
+    var board = D.el('<div class="grid" style="grid-template-columns:repeat(4,1fr);align-items:start"></div>');
+    var projects = store.data.dev.projects;
+    COLS.forEach(function (col) {
+      var items = projects.filter(function (p) { return p.status === col; })
+        .sort(function (a, b) { return (b.updated || '').localeCompare(a.updated || ''); });
+      var colEl = D.el('<div class="card" data-col="' + col + '" style="padding:10px;min-height:160px;background:var(--bg-soft)"></div>');
+      var title = D.el('<div class="row" style="justify-content:space-between;margin-bottom:8px"><b class="small">' + col + '</b><span class="tag">' + items.length + '</span></div>');
+      colEl.appendChild(title);
+      if (col === '已完成' && !doneExpanded && items.length) {
+        var toggle = D.el('<button class="btn btn-small btn-ghost">展开 ' + items.length + ' 个已完成项目 ▾</button>');
+        toggle.addEventListener('click', function () { doneExpanded = true; rerender(); });
+        colEl.appendChild(toggle);
+        board.appendChild(colEl);
+        return;
+      }
+      if (col === '已完成' && doneExpanded && items.length) {
+        var fold = D.el('<button class="btn btn-small btn-ghost" style="margin-bottom:6px">收起 ▴</button>');
+        fold.addEventListener('click', function () { doneExpanded = false; rerender(); });
+        colEl.appendChild(fold);
+      }
+      if (!items.length) colEl.appendChild(D.el('<div class="muted small" style="text-align:center;padding:18px 0">空</div>'));
+      items.forEach(function (p) {
+        var card = D.el('<div class="card" draggable="true" data-drag-id="' + p.id + '" style="padding:10px 12px;margin-bottom:8px;cursor:grab;background:var(--bg-card)">' +
+          '<b style="font-size:13px">' + U.esc(p.name) + '</b>' +
+          '<div class="row mt8" style="gap:6px"><div style="flex:1;height:6px;border-radius:3px;background:var(--bg-hover);overflow:hidden"><div style="width:' + p.progress + '%;height:100%;background:var(--mod-color)"></div></div><span class="muted small">' + p.progress + '%</span></div>' +
+          (p.nextStep ? '<div class="small" style="margin-top:6px">下一步：<b>' + U.esc(p.nextStep) + '</b></div>' : '') +
+          '<div class="muted" style="font-size:10px;margin-top:6px">更新 ' + U.esc((p.updated || '').slice(0, 10)) + (p.due ? ' · 截止 ' + p.due : '') + '</div></div>');
+        card.addEventListener('click', function (e) {
+          if (e.target.closest('[draggable]') && card.dataset.justDragged) { card.dataset.justDragged = ''; return; }
+          detailModal(p);
+        });
+        colEl.appendChild(card);
+      });
+      board.appendChild(colEl);
+    });
+    view.appendChild(board);
+
+    App.comp.makeKanbanDraggable(board, function (id, status) {
+      var p = store.data.dev.projects.filter(function (x) { return x.id === id; })[0];
+      if (!p || p.status === status) return;
+      var logs = p.logs.slice();
+      logs.push({ time: new Date().toISOString(), text: '状态：' + p.status + ' → ' + status, auto: true });
+      store.upsert('dev.projects', Object.assign({}, p, { status: status, updated: new Date().toISOString(), logs: logs }));
+      rerender();
+    });
+    board.addEventListener('dragend', function () {
+      board.querySelectorAll('[data-drag-id]').forEach(function (c) { c.dataset.justDragged = '1'; setTimeout(function () { delete c.dataset.justDragged; }, 50); });
+    });
+  }
+
+  App.shell.registerPage('dev', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/64-consult.js ==== */
+/* 64-consult.js — 咨询工作：收入/收款记录 ＋ 汇总卡 ＋ 月度柱状图 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var filterMonth = '';      // '' = 全部
+  var onlyUnreceived = false;
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+
+  function incomeModal(r) {
+    var clients = [];
+    store.data.consult.incomes.forEach(function (i) { if (i.client && clients.indexOf(i.client) === -1) clients.push(i.client); });
+    App.ui.modal({
+      title: r ? '编辑收入记录' : '记一笔收入',
+      values: r || { date: U.today(), received: false },
+      fields: [
+        { key: 'client', label: '客户', type: 'text', required: true, list: 'client-list' },
+        { key: 'desc', label: '事项说明', type: 'text' },
+        { key: 'amount', label: '金额（元）', type: 'number', required: true, min: 0 },
+        { key: 'date', label: '日期', type: 'date', required: true },
+        { key: 'received', label: '已收款', type: 'switch', onText: '已收到这笔钱' },
+        { key: 'note', label: '备注', type: 'textarea', rows: 2 }
+      ],
+      onDelete: r ? function () { store.remove('consult.incomes', r.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('consult.incomes', Object.assign({}, r, {
+          id: r ? r.id : U.uid(), client: v.client, desc: v.desc, amount: v.amount,
+          date: v.date, received: v.received, note: v.note
+        }));
+        rerender();
+        return null;
+      }
+    });
+    /* datalist 供客户名联想 */
+    if (clients.length && !document.getElementById('client-list')) {
+      var dl = D.el('<datalist id="client-list">' + clients.map(function (c) { return '<option value="' + U.esc(c) + '">'; }).join('') + '</datalist>');
+      document.body.appendChild(dl);
+    }
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    var ui = App.ui;
+    var today = U.today();
+    var incomes = store.data.consult.incomes;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">咨询工作</h1><p class="page-sub">每笔收入记清楚：谁、多少钱、收没收到</p>'));
+
+    /* 汇总卡 */
+    var ms = L.incomeMonthSummary(incomes, U.monthOf(today));
+    var yt = L.incomeYearTotal(incomes, today.slice(0, 4));
+    var cards = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px"></div>');
+    cards.appendChild(App.ui.statCard('本月已收', '¥' + U.fmtMoney(ms.received), '点击只看本月', function () { filterMonth = U.monthOf(today); onlyUnreceived = false; rerender(); }));
+    cards.appendChild(App.ui.statCard('本月未收', '¥' + U.fmtMoney(ms.unreceived), ms.unreceivedCount + ' 笔 · 点击只看未收', function () { filterMonth = U.monthOf(today); onlyUnreceived = true; rerender(); }));
+    cards.appendChild(App.ui.statCard('本年累计（已收）', '¥' + U.fmtMoney(yt), today.slice(0, 4) + ' 年', function () { filterMonth = ''; onlyUnreceived = false; rerender(); }));
+    view.appendChild(cards);
+
+    /* 筛选条 */
+    var months = [];
+    incomes.forEach(function (r) { var m = U.monthOf(r.date); if (m && months.indexOf(m) === -1) months.push(m); });
+    months.sort().reverse();
+    var bar = D.el('<div class="row" style="margin-bottom:12px">' +
+      '<select class="select" style="width:140px"><option value="">全部月份</option>' + months.map(function (m) { return '<option value="' + m + '">' + m + '</option>'; }).join('') + '</select>' +
+      '<label class="row small"><input type="checkbox"' + (onlyUnreceived ? ' checked' : '') + '> 只看未收</label>' +
+      '<span class="spacer"></span><button class="btn btn-primary">＋ 记一笔</button></div>');
+    var sel = bar.querySelector('select');
+    sel.value = filterMonth;
+    sel.addEventListener('change', function () { filterMonth = sel.value; rerender(); });
+    bar.querySelector('input[type=checkbox]').addEventListener('change', function (e) { onlyUnreceived = e.target.checked; rerender(); });
+    bar.querySelector('button').addEventListener('click', function () { incomeModal(null); });
+    view.appendChild(bar);
+
+    /* 柱状图 */
+    var series = L.monthlyIncomeSeries(incomes, today, 6);
+    var chart = D.el('<div class="card" style="margin-bottom:14px"></div>');
+    chart.innerHTML = App.charts.barChart(series.map(function (m) {
+      return { label: m.month.slice(5) + '月', parts: [{ value: m.received, color: 'var(--ok)', name: '已收' }, { value: m.unreceived, color: 'var(--warn-border)', name: '未收' }] };
+    }), { yFmt: function (v) { return '¥' + Math.round(v); } });
+    chart.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-idx]');
+      if (!t) return;
+      filterMonth = series[+t.dataset.idx].month;
+      rerender();
+    });
+    view.appendChild(chart);
+
+    /* 记录表 */
+    var list = incomes.slice().sort(U.byDateDesc);
+    if (filterMonth) list = list.filter(function (r) { return U.monthOf(r.date) === filterMonth; });
+    if (onlyUnreceived) list = list.filter(function (r) { return !r.received; });
+    if (!list.length) {
+      view.appendChild(ui.emptyState('💰', '还没有收入记录', '＋ 记一笔', function () { incomeModal(null); }));
+      return;
+    }
+    var tbl = D.el('<table class="tbl"><thead><tr><th>日期</th><th>客户</th><th>事项</th><th style="text-align:right">金额</th><th>状态</th><th></th></tr></thead><tbody></tbody></table>');
+    var tb = tbl.querySelector('tbody');
+    list.forEach(function (r) {
+      var tr = D.el('<tr><td>' + r.date + '</td><td>' + U.esc(r.client) + '</td><td class="muted">' + U.esc(r.desc || '') + '</td>' +
+        '<td style="text-align:right"><b>¥' + U.fmtMoney(r.amount) + '</b></td><td></td><td></td></tr>');
+      var tdStatus = tr.children[4];
+      tdStatus.appendChild(App.comp.capsule(r.received ? '已收' : '未收', {
+        on: r.received,
+        title: '点击切换收款状态',
+        onClick: function () { store.upsert('consult.incomes', Object.assign({}, r, { received: !r.received })); rerender(); }
+      }));
+      var tdAct = tr.children[5];
+      tdAct.appendChild(App.comp.iconBtn('✏️', '编辑', function () { incomeModal(r); }));
+      tdAct.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除记录', text: '删除 ' + r.date + ' ' + r.client + ' ¥' + U.fmtMoney(r.amount) + '？', danger: true }).then(function (ok) { if (ok) { store.remove('consult.incomes', r.id); rerender(); } });
+      }));
+      tb.appendChild(tr);
+    });
+    view.appendChild(tbl);
+  }
+
+  App.shell.registerPage('consult', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/65-study.js ==== */
+/* 65-study.js — 学习计划：目标 │ 打卡 │ 时间表 │ 阅读清单 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var TAB = 'goals';
+  var expandedGoals = {};
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+
+  function goalModal(g) {
+    App.ui.modal({
+      title: g ? '编辑目标' : '新目标',
+      values: g || {},
+      fields: [
+        { key: 'title', label: '目标（如：毕业论文）', type: 'text', required: true },
+        { key: 'due', label: '截止日期（选填）', type: 'date' }
+      ],
+      onDelete: g ? function () { store.remove('study.goals', g.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('study.goals', Object.assign({}, g, { id: g ? g.id : U.uid(), title: v.title, due: v.due || null, subtasks: g ? g.subtasks : [] }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function checkinModal(date) {
+    var cur = store.data.study.checkins[date];
+    App.ui.modal({
+      title: (date === U.today() ? '今日' : U.fmtDateCN(date)) + '学习打卡',
+      values: cur || { minutes: 60, note: '' },
+      fields: [
+        { key: 'minutes', label: '学习时长（分钟）', type: 'number', required: true, min: 0, max: 1440 },
+        { key: 'note', label: '今天学了什么（选填）', type: 'text' }
+      ],
+      onDelete: cur ? function () { store.remove('study.checkins', date); rerender(); } : null,
+      deleteText: '删除这天打卡记录？',
+      onSubmit: function (v) {
+        store.mapSet('study.checkins', date, { minutes: v.minutes, note: v.note });
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function renderGoals(box) {
+    var ui = App.ui;
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 新目标</button></div>');
+    head.querySelector('button').addEventListener('click', function () { goalModal(null); });
+    box.appendChild(head);
+    var goals = store.data.study.goals;
+    if (!goals.length) { box.appendChild(ui.emptyState('🎯', '还没有学习目标，先立一个（比如毕业论文）', '＋ 新目标', function () { goalModal(null); })); return; }
+    goals.forEach(function (g) {
+      var prog = L.goalProgress(g);
+      var card = D.el('<div class="card" style="margin-bottom:12px"></div>');
+      var top = D.el('<div class="row" style="justify-content:space-between"><div><b>' + U.esc(g.title) + '</b>' + (g.due ? '<span class="muted small"> · 截止 ' + g.due + '</span>' : '') + '</div><span class="tag">' + prog + '%</span></div>');
+      card.appendChild(top);
+      card.appendChild(D.el('<div style="height:8px;border-radius:4px;background:var(--bg-hover);margin:8px 0;overflow:hidden"><div style="width:' + prog + '%;height:100%;background:var(--mod-color)"></div></div>'));
+      var subBox = D.el('<div></div>');
+      (g.subtasks || []).forEach(function (st) {
+        var row = D.el('<div class="row small" style="padding:4px 0"><input type="checkbox"' + (st.done ? ' checked' : '') + '><span style="flex:1;' + (st.done ? 'text-decoration:line-through;opacity:.6' : '') + '">' + U.esc(st.text) + (st.due ? ' <span class="muted">(' + st.due + ')</span>' : '') + '</span></div>');
+        row.querySelector('input').addEventListener('change', function (e) {
+          var subs = g.subtasks.map(function (x) { return x.id === st.id ? Object.assign({}, x, { done: e.target.checked }) : x; });
+          store.upsert('study.goals', Object.assign({}, g, { subtasks: subs }));
+          rerender();
+        });
+        row.appendChild(App.comp.iconBtn('🗑', '删除子任务', function () {
+          store.upsert('study.goals', Object.assign({}, g, { subtasks: g.subtasks.filter(function (x) { return x.id !== st.id; }) }));
+          rerender();
+        }));
+        subBox.appendChild(row);
+        /* 第二层检查项 */
+        if (expandedGoals[g.id + ':' + st.id]) {
+          var chkBox = D.el('<div style="margin-left:26px;border-left:2px solid var(--border);padding-left:10px"></div>');
+          (st.checks || []).forEach(function (c, ci) {
+            var cr = D.el('<div class="row small" style="padding:2px 0"><input type="checkbox"' + (c.done ? ' checked' : '') + '><span style="flex:1;' + (c.done ? 'opacity:.6' : '') + '">' + U.esc(c.text) + '</span></div>');
+            cr.querySelector('input').addEventListener('change', function (e) {
+              var subs = g.subtasks.map(function (x) {
+                if (x.id !== st.id) return x;
+                return Object.assign({}, x, { checks: x.checks.map(function (cc, i) { return i === ci ? Object.assign({}, cc, { done: e.target.checked }) : cc; }) });
+              });
+              store.upsert('study.goals', Object.assign({}, g, { subtasks: subs }));
+              rerender();
+            });
+            chkBox.appendChild(cr);
+          });
+          var addChk = D.el('<div class="row small mt8"><input class="input" placeholder="＋检查项，回车添加" style="padding:3px 8px;font-size:12px"></div>');
+          addChk.querySelector('input').addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter' || !e.target.value.trim()) return;
+            var subs = g.subtasks.map(function (x) {
+              if (x.id !== st.id) return x;
+              return Object.assign({}, x, { checks: (x.checks || []).concat([{ text: e.target.value.trim(), done: false }]) });
+            });
+            store.upsert('study.goals', Object.assign({}, g, { subtasks: subs }));
+            rerender();
+          });
+          chkBox.appendChild(addChk);
+          subBox.appendChild(chkBox);
+        }
+        row.insertBefore(App.comp.iconBtn(expandedGoals[g.id + ':' + st.id] ? '▾' : '▸', '检查项', function () {
+          expandedGoals[g.id + ':' + st.id] = !expandedGoals[g.id + ':' + st.id];
+          rerender();
+        }), row.lastElementChild);
+      });
+      card.appendChild(subBox);
+      var addSub = D.el('<div class="row mt8"><input class="input" placeholder="＋子任务，回车添加"><button class="btn btn-small">添加</button></div>');
+      function addSubFn() {
+        var input = addSub.querySelector('input');
+        var t = input.value.trim();
+        if (!t) return;
+        store.upsert('study.goals', Object.assign({}, g, { subtasks: (g.subtasks || []).concat([{ id: U.uid(), text: t, done: false, due: null, checks: [] }]) }));
+        rerender();
+      }
+      addSub.querySelector('input').addEventListener('keydown', function (e) { if (e.key === 'Enter') addSubFn(); });
+      addSub.querySelector('button').addEventListener('click', addSubFn);
+      card.appendChild(addSub);
+      var acts = D.el('<div class="row mt8"></div>');
+      acts.appendChild(App.comp.iconBtn('✏️', '编辑目标', function () { goalModal(g); }));
+      acts.appendChild(App.comp.iconBtn('🗑', '删除目标', function () {
+        ui.confirm({ title: '删除目标', text: '删除「' + g.title + '」及其全部子任务？', danger: true }).then(function (ok) { if (ok) { store.remove('study.goals', g.id); rerender(); } });
+      }));
+      card.appendChild(acts);
+      box.appendChild(card);
+    });
+  }
+
+  function renderCheckin(box) {
+    var ui = App.ui;
+    var today = U.today();
+    var data = store.data.study.checkins;
+    var cur = data[today];
+    var big = D.el('<div class="card" style="text-align:center;padding:22px;margin-bottom:14px"></div>');
+    if (cur) {
+      big.innerHTML = '<div style="font-size:15px">今天已打卡 ✅</div><div style="font-size:26px;font-weight:800;margin:6px 0">' + U.fmtMinutes(cur.minutes) + '</div>' +
+        (cur.note ? '<div class="muted small">' + U.esc(cur.note) + '</div>' : '');
+      var editBtn = D.el('<button class="btn mt12">修改今日记录</button>');
+      editBtn.addEventListener('click', function () { checkinModal(today); });
+      big.appendChild(editBtn);
+    } else {
+      big.innerHTML = '<div class="muted small">今天学习了吗？</div>';
+      var btn = D.el('<button class="btn btn-primary" style="font-size:17px;padding:12px 34px;margin-top:10px">今日打卡</button>');
+      btn.addEventListener('click', function () { checkinModal(today); });
+      big.appendChild(btn);
+    }
+    box.appendChild(big);
+
+    var mon = U.mondayOf(today);
+    var cards = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px"></div>');
+    cards.appendChild(App.ui.statCard('连续打卡', L.streakDays(data, today) + ' 天'));
+    cards.appendChild(App.ui.statCard('本周总时长', U.fmtMinutes(L.checkinTotalMinutes(data, mon, U.addDays(mon, 6)))));
+    cards.appendChild(App.ui.statCard('本月总时长', U.fmtMinutes(L.checkinTotalMinutes(data, U.monthOf(today) + '-01', U.monthOf(today) + '-31'))));
+    box.appendChild(cards);
+
+    var grid = L.heatGridDays(today, 8);
+    var heat = D.el('<div class="card"><b class="small">近 8 周打卡热力（点格子查看/修改）</b><div class="mt8"></div></div>');
+    var heatBox = heat.lastElementChild;
+    heatBox.innerHTML = App.charts.heatGrid(grid.days, function (d) { return data[d] ? data[d].minutes : 0; }, {});
+    heatBox.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-date]');
+      if (t) checkinModal(t.dataset.date);
+    });
+    box.appendChild(heat);
+  }
+
+  function renderTimetable(box) {
+    var ui = App.ui;
+    var WD = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    var COLORS = ['var(--c-home)', 'var(--c-plan)', 'var(--c-media)', 'var(--c-dev)', 'var(--c-study)', 'var(--c-diet)', 'var(--c-fun)', 'var(--c-consult)'];
+    function ttModal(t, weekday) {
+      ui.modal({
+        title: t ? '编辑学习时段' : '添加学习时段',
+        values: t || { weekday: weekday, start: '19:00', end: '21:00' },
+        fields: [
+          { key: 'weekday', label: '星期', type: 'select', options: WD.map(function (w, i) { return { value: i + 1, label: w }; }) },
+          { key: 'start', label: '开始', type: 'time', required: true },
+          { key: 'end', label: '结束', type: 'time', required: true, validate: function (v, vals) { return L.validateTimeRange(vals.start, v); } },
+          { key: 'text', label: '学什么', type: 'text', required: true },
+          { key: 'color', label: '颜色', type: 'select', options: [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return { value: i, label: '颜色 ' + (i + 1) }; }) }
+        ],
+        onDelete: t ? function () { store.remove('study.timetable', t.id); rerender(); } : null,
+        onSubmit: function (v) {
+          store.upsert('study.timetable', Object.assign({}, t, { id: t ? t.id : U.uid(), weekday: +v.weekday, start: v.start, end: v.end, text: v.text, color: +v.color }));
+          rerender();
+          return null;
+        }
+      });
+    }
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(7,1fr)"></div>');
+    for (var wd = 1; wd <= 7; wd++) {
+      var col = D.el('<div class="card" style="padding:8px;min-height:140px;background:var(--bg-soft)"></div>');
+      var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:6px"><b class="small">' + WD[wd - 1] + '</b><button class="btn btn-ghost btn-small">＋</button></div>');
+      (function (w) { head.querySelector('button').addEventListener('click', function () { ttModal(null, w); }); })(wd);
+      col.appendChild(head);
+      store.data.study.timetable.filter(function (t) { return t.weekday === wd; })
+        .sort(function (a, b) { return a.start < b.start ? -1 : 1; })
+        .forEach(function (t) {
+          var chip = D.el('<div style="border-left:3px solid ' + COLORS[t.color % 8] + ';background:var(--bg-card);border-radius:6px;padding:4px 6px;margin-bottom:6px;font-size:12px;cursor:pointer">' +
+            '<div class="muted">' + t.start + '–' + t.end + '</div><div>' + U.esc(t.text) + '</div></div>');
+          chip.addEventListener('click', function () { ttModal(t); });
+          col.appendChild(chip);
+        });
+      grid.appendChild(col);
+    }
+    box.appendChild(grid);
+    box.appendChild(D.el('<div class="muted small mt8">点击格子条目编辑；时间表仅作计划展示，第一版不与打卡联动</div>'));
+  }
+
+  function renderReadings(box) {
+    var ui = App.ui;
+    var STATUS = ['想读', '在读', '读完'];
+    function readModal(r) {
+      ui.modal({
+        title: r ? '编辑阅读条目' : '加入阅读清单',
+        values: r || { type: '书籍', status: '想读' },
+        fields: [
+          { key: 'name', label: '书名 / 文献名 / 课程名', type: 'text', required: true },
+          { key: 'type', label: '类型', type: 'select', options: ['书籍', '论文', '课程'] },
+          { key: 'status', label: '状态', type: 'select', options: STATUS },
+          { key: 'note', label: '我的笔记', type: 'textarea', rows: 4 }
+        ],
+        onDelete: r ? function () { store.remove('study.readings', r.id); rerender(); } : null,
+        onSubmit: function (v) {
+          var doneDate = r ? r.doneDate : null;
+          if (v.status === '读完' && !doneDate) doneDate = U.today();
+          if (v.status !== '读完') doneDate = null;
+          store.upsert('study.readings', Object.assign({}, r, { id: r ? r.id : U.uid(), name: v.name, type: v.type, status: v.status, note: v.note, doneDate: doneDate }));
+          rerender();
+          return null;
+        }
+      });
+    }
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 加入清单</button></div>');
+    head.querySelector('button').addEventListener('click', function () { readModal(null); });
+    box.appendChild(head);
+    var list = store.data.study.readings;
+    if (!list.length) { box.appendChild(ui.emptyState('📚', '阅读清单是空的', '＋ 加入清单', function () { readModal(null); })); return; }
+    list.forEach(function (r) {
+      var row = D.el('<div class="card row" style="padding:10px 14px;margin-bottom:8px">' +
+        '<span class="tag">' + U.esc(r.type) + '</span><span style="flex:1"><b>' + U.esc(r.name) + '</b>' +
+        (r.doneDate ? '<span class="muted small"> · 读完于 ' + r.doneDate + '</span>' : '') +
+        (r.note ? '<div class="muted small" style="white-space:pre-wrap;margin-top:4px">' + U.esc(r.note) + '</div>' : '') + '</span></div>');
+      row.appendChild(App.comp.cycleCapsule(r.status, STATUS, function (ns) {
+        store.upsert('study.readings', Object.assign({}, r, { status: ns, doneDate: ns === '读完' ? (r.doneDate || U.today()) : null }));
+        rerender();
+      }));
+      row.appendChild(App.comp.iconBtn('✏️', '编辑/写笔记', function () { readModal(r); }));
+      row.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除', text: '从清单移除「' + r.name + '」？', danger: true }).then(function (ok) { if (ok) { store.remove('study.readings', r.id); rerender(); } });
+      }));
+      box.appendChild(row);
+    });
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">学习计划</h1><p class="page-sub">目标拆解 · 每日打卡 · 固定时间表 · 阅读笔记</p>'));
+    view.appendChild(App.ui.tabs([
+      { id: 'goals', label: '目标' }, { id: 'checkin', label: '打卡' },
+      { id: 'timetable', label: '时间表' }, { id: 'readings', label: '阅读清单' }
+    ], TAB, function (id) { TAB = id; rerender(); }));
+    var box = D.el('<div></div>');
+    view.appendChild(box);
+    if (TAB === 'goals') renderGoals(box);
+    else if (TAB === 'checkin') renderCheckin(box);
+    else if (TAB === 'timetable') renderTimetable(box);
+    else renderReadings(box);
+  }
+
+  App.shell.registerPage('study', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/66-diet.js ==== */
+/* 66-diet.js — 饮食计划：本周安排 │ 今日记录 │ 菜谱库 │ 体重 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var TAB = 'week';
+  var weekMonday = U.mondayOf(U.today());
+  var recordDate = U.today();
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+  var MEALS = [['breakfast', '早餐'], ['lunch', '午餐'], ['dinner', '晚餐']];
+
+  function mealCellModal(date, mealKey, mealLabel) {
+    var recipes = store.data.diet.recipes;
+    var cur = (store.data.diet.meals[date] || {})[mealKey] || '';
+    var matched = recipes.filter(function (r) { return r.name === cur; })[0];
+    App.ui.modal({
+      title: U.fmtDateCN(date) + ' ' + mealLabel,
+      values: { pick: matched ? matched.id : '', free: matched ? '' : cur },
+      fields: [
+        { key: 'pick', label: '从菜谱库选', type: 'select', options: [{ value: '', label: '（手输内容）' }].concat(recipes.map(function (r) { return { value: r.id, label: r.name }; })) },
+        { key: 'free', label: '或手动输入', type: 'text', placeholder: '如：楼下沙县' }
+      ],
+      onSubmit: function (v) {
+        var text = v.free.trim();
+        if (v.pick) {
+          var r = recipes.filter(function (x) { return x.id === v.pick; })[0];
+          if (r) text = r.name;
+        }
+        var day = Object.assign({ breakfast: '', lunch: '', dinner: '' }, store.data.diet.meals[date]);
+        day[mealKey] = text;
+        store.mapSet('diet.meals', date, day);
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function renderWeek(box) {
+    var ui = App.ui;
+    var nav = D.el('<div class="row" style="margin-bottom:12px"><button class="btn btn-small" data-a="prev">← 上周</button><button class="btn btn-small" data-a="cur">本周</button><button class="btn btn-small" data-a="next">下周 →</button><button class="btn btn-small" data-a="copy">复制上周</button><span class="muted small week-label"></span></div>');
+    nav.querySelector('[data-a=prev]').addEventListener('click', function () { weekMonday = U.addDays(weekMonday, -7); rerender(); });
+    nav.querySelector('[data-a=next]').addEventListener('click', function () { weekMonday = U.addDays(weekMonday, 7); rerender(); });
+    nav.querySelector('[data-a=cur]').addEventListener('click', function () { weekMonday = U.mondayOf(U.today()); rerender(); });
+    nav.querySelector('[data-a=copy]').addEventListener('click', function () {
+      ui.confirm({ title: '复制上周', text: '把上周的餐食安排复制到本周（覆盖本周已有安排）？' }).then(function (ok) {
+        if (!ok) return;
+        var prevMon = U.addDays(weekMonday, -7);
+        for (var i = 0; i < 7; i++) {
+          var pd = U.addDays(prevMon, i), cd = U.addDays(weekMonday, i);
+          var pv = store.data.diet.meals[pd];
+          if (pv) store.mapSet('diet.meals', cd, Object.assign({}, pv));
+        }
+        rerender();
+      });
+    });
+    nav.querySelector('.week-label').textContent = U.fmtDateCN(weekMonday) + ' – ' + U.fmtDateCN(U.addDays(weekMonday, 6));
+    box.appendChild(nav);
+
+    var today = U.today();
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(7,1fr)"></div>');
+    for (var i = 0; i < 7; i++) {
+      var date = U.addDays(weekMonday, i);
+      var isToday = date === today;
+      var col = D.el('<div class="card" style="padding:8px;' + (isToday ? 'border:2px solid var(--mod-color)' : '') + '"></div>');
+      col.appendChild(D.el('<div class="small" style="font-weight:700;margin-bottom:6px">' + '一二三四五六日'.charAt(i) + ' ' + U.fmtDateCN(date) + (isToday ? ' ·今天' : '') + '</div>'));
+      var day = store.data.diet.meals[date] || {};
+      MEALS.forEach(function (m) {
+        var cell = D.el('<div style="border:1px dashed var(--border);border-radius:6px;padding:4px 6px;margin-bottom:6px;font-size:12px;cursor:pointer;min-height:34px">' +
+          '<div class="muted" style="font-size:10px">' + m[1] + '</div><div>' + (day[m[0]] ? U.esc(day[m[0]]) : '<span class="muted">—</span>') + '</div></div>');
+        cell.addEventListener('click', function () { mealCellModal(date, m[0], m[1]); });
+        col.appendChild(cell);
+      });
+      grid.appendChild(col);
+    }
+    box.appendChild(grid);
+  }
+
+  function renderRecords(box) {
+    var nav = App.ui.dateNav(recordDate, function (d) { recordDate = d; rerender(); });
+    box.appendChild(nav);
+    var meals = store.data.diet.meals[recordDate] || {};
+    var recs = store.data.diet.records[recordDate] || { breakfast: { actual: '', eaten: false }, lunch: { actual: '', eaten: false }, dinner: { actual: '', eaten: false } };
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr)"></div>');
+    MEALS.forEach(function (m) {
+      var r = recs[m[0]] || { actual: '', eaten: false };
+      var card = D.el('<div class="card"><b class="small">' + m[1] + '</b>' +
+        '<div class="muted small mt8">计划：' + (meals[m[0]] ? U.esc(meals[m[0]]) : '未安排') + '</div>' +
+        '<div class="form-row mt8"><label>实际吃了</label><input class="input actual" value="' + U.esc(r.actual) + '" placeholder="实际吃了什么"></div>' +
+        '<label class="row small"><input type="checkbox" class="eaten"' + (r.eaten ? ' checked' : '') + '> 已吃 ✓</label></div>');
+      function save() {
+        var day = Object.assign({ breakfast: { actual: '', eaten: false }, lunch: { actual: '', eaten: false }, dinner: { actual: '', eaten: false } }, store.data.diet.records[recordDate]);
+        day[m[0]] = { actual: card.querySelector('.actual').value, eaten: card.querySelector('.eaten').checked };
+        store.mapSet('diet.records', recordDate, day);
+      }
+      card.querySelector('.actual').addEventListener('change', save);
+      card.querySelector('.eaten').addEventListener('change', save);
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
+  function recipeModal(r) {
+    App.ui.modal({
+      title: r ? '编辑菜谱' : '新菜谱',
+      wide: true,
+      values: r || { tags: (r && r.tags || []).join('、') },
+      fields: [
+        { key: 'name', label: '菜名', type: 'text', required: true },
+        { key: 'tags', label: '标签（顿号分隔，如：主食、荤）', type: 'text', placeholder: (store.data.settings.recipeTags || []).join('、') },
+        { key: 'ingredients', label: '食材清单', type: 'textarea', rows: 2 },
+        { key: 'steps', label: '简单做法', type: 'textarea', rows: 4 }
+      ],
+      onDelete: r ? function () { store.remove('diet.recipes', r.id); rerender(); } : null,
+      onSubmit: function (v) {
+        var tags = String(v.tags || '').split(/[、,，]/).map(function (t) { return t.trim(); }).filter(Boolean);
+        store.upsert('diet.recipes', Object.assign({}, r, { id: r ? r.id : U.uid(), name: v.name, tags: tags, ingredients: v.ingredients, steps: v.steps }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function renderRecipes(box) {
+    var ui = App.ui;
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 新菜谱</button></div>');
+    head.querySelector('button').addEventListener('click', function () { recipeModal(null); });
+    box.appendChild(head);
+    var list = store.data.diet.recipes;
+    if (!list.length) { box.appendChild(ui.emptyState('🍳', '菜谱库是空的，先记一道常吃的', '＋ 新菜谱', function () { recipeModal(null); })); return; }
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr)"></div>');
+    list.forEach(function (r) {
+      var card = D.el('<div class="card" style="padding:12px 14px"><b>' + U.esc(r.name) + '</b>' +
+        '<div class="row mt8" style="gap:4px;flex-wrap:wrap">' + r.tags.map(function (t) { return '<span class="tag">' + U.esc(t) + '</span>'; }).join('') + '</div>' +
+        (r.ingredients ? '<div class="muted small mt8">食材：' + U.esc(r.ingredients.slice(0, 60)) + '</div>' : '') +
+        '<div class="row mt8"></div></div>');
+      var acts = card.querySelector('.row.mt8');
+      acts.appendChild(App.comp.iconBtn('📅', '排入本周', function () {
+        ui.modal({
+          title: '把「' + r.name + '」排到哪顿？',
+          values: { date: U.today(), meal: 'lunch' },
+          fields: [
+            { key: 'date', label: '日期', type: 'date', required: true },
+            { key: 'meal', label: '餐次', type: 'select', options: MEALS.map(function (m) { return { value: m[0], label: m[1] }; }) }
+          ],
+          onSubmit: function (v) {
+            var day = Object.assign({ breakfast: '', lunch: '', dinner: '' }, store.data.diet.meals[v.date]);
+            day[v.meal] = r.name;
+            store.mapSet('diet.meals', v.date, day);
+            rerender();
+            return null;
+          }
+        });
+      }));
+      acts.appendChild(App.comp.iconBtn('✏️', '编辑', function () { recipeModal(r); }));
+      acts.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除菜谱', text: '删除「' + r.name + '」？', danger: true }).then(function (ok) { if (ok) { store.remove('diet.recipes', r.id); rerender(); } });
+      }));
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
+  function renderWeight(box) {
+    var ui = App.ui;
+    function weightModal(w) {
+      ui.modal({
+        title: w ? '修改体重记录' : '记体重',
+        values: w || { date: U.today() },
+        fields: [
+          { key: 'date', label: '日期', type: 'date', required: true },
+          { key: 'kg', label: '体重（kg）', type: 'number', required: true, min: 20, max: 300 },
+          { key: 'bf', label: '体脂率 %（选填）', type: 'number', min: 0, max: 80 }
+        ],
+        onDelete: w ? function () { store.remove('diet.weights', w.id); rerender(); } : null,
+        onSubmit: function (v) {
+          /* 同一天重复记录则覆盖 */
+          var existing = w || store.data.diet.weights.filter(function (x) { return x.date === v.date; })[0];
+          if (existing && !w) ui.toast('该日期已有记录，已覆盖', true);
+          store.upsert('diet.weights', { id: existing ? existing.id : U.uid(), date: v.date, kg: v.kg, bf: v.bf });
+          rerender();
+          return null;
+        }
+      });
+    }
+    var head = D.el('<div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="row">' +
+      '<select class="select" style="width:110px"><option value="30">近 30 天</option><option value="90">近 90 天</option><option value="all">全部</option></select></div>' +
+      '<button class="btn btn-primary">＋ 记一笔</button></div>');
+    var sel = head.querySelector('select');
+    var RANGE = '30';
+    sel.addEventListener('change', function () { RANGE = sel.value; rerender(); });
+    head.querySelector('button').addEventListener('click', function () { weightModal(null); });
+    box.appendChild(head);
+
+    var ws = L.weightSummary(store.data.diet.weights);
+    if (ws) {
+      var info = D.el('<div class="row" style="margin-bottom:10px">' +
+        App.ui.statCard('最近体重', ws.latest.kg + ' kg', ws.latest.date).outerHTML +
+        App.ui.statCard('较上次', (ws.change > 0 ? '+' : '') + ws.change.toFixed(1) + ' kg').outerHTML + '</div>');
+      box.appendChild(info);
+    }
+    var today = U.today();
+    var from = RANGE === 'all' ? '0000-00-00' : U.addDays(today, -(+RANGE - 1));
+    var pts = store.data.diet.weights.filter(function (w) { return w.date >= from; }).sort(U.byDateAsc)
+      .map(function (w) { return { date: w.date, value: w.kg }; });
+    var chart = D.el('<div class="card"></div>');
+    chart.innerHTML = App.charts.lineChart(pts.length ? [{ name: '体重(kg)', points: pts }] : [], { from: RANGE === 'all' ? undefined : from, to: today });
+    box.appendChild(chart);
+
+    var recs = store.data.diet.weights.slice().sort(U.byDateDesc);
+    if (recs.length) {
+      var tbl = D.el('<table class="tbl mt12"><thead><tr><th>日期</th><th>体重 kg</th><th>体脂 %</th><th></th></tr></thead><tbody></tbody></table>');
+      var tb = tbl.querySelector('tbody');
+      recs.forEach(function (w) {
+        var tr = D.el('<tr><td>' + w.date + '</td><td>' + w.kg + '</td><td>' + (w.bf == null ? '—' : w.bf) + '</td><td></td></tr>');
+        var td = tr.lastElementChild;
+        td.appendChild(App.comp.iconBtn('✏️', '修改', function () { weightModal(w); }));
+        td.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+          ui.confirm({ title: '删除记录', text: '删除 ' + w.date + ' 的体重记录？', danger: true }).then(function (ok) { if (ok) { store.remove('diet.weights', w.id); rerender(); } });
+        }));
+        tb.appendChild(tr);
+      });
+      box.appendChild(tbl);
+    }
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">饮食计划</h1><p class="page-sub">排餐 · 记录 · 菜谱 · 体重</p>'));
+    view.appendChild(App.ui.tabs([
+      { id: 'week', label: '本周安排' }, { id: 'records', label: '今日记录' },
+      { id: 'recipes', label: '菜谱库' }, { id: 'weight', label: '体重' }
+    ], TAB, function (id) { TAB = id; rerender(); }));
+    var box = D.el('<div></div>');
+    view.appendChild(box);
+    if (TAB === 'week') renderWeek(box);
+    else if (TAB === 'records') renderRecords(box);
+    else if (TAB === 'recipes') renderRecipes(box);
+    else renderWeight(box);
+  }
+
+  App.shell.registerPage('diet', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/67-fun.js ==== */
+/* 67-fun.js — 游戏娱乐：时间记录 │ 娱乐安排 │ 今天玩什么 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, L = App.logic, D = App.dom, store = App.store;
+  var TAB = 'records';
+  var viewEl = null;
+  var pickState = { spinning: false, result: null, skipped: [] };
+  function rerender() { if (viewEl) render(viewEl, {}); }
+  var WD = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  var MOODS = { good: '😀', ok: '😐', bad: '😞' };
+
+  function recordModal(r) {
+    App.ui.modal({
+      title: r ? '编辑娱乐记录' : '记一笔娱乐时间',
+      values: r || { date: U.today(), minutes: 60 },
+      fields: [
+        { key: 'date', label: '日期', type: 'date', required: true },
+        { key: 'what', label: '玩了/看了什么', type: 'text', required: true },
+        { key: 'minutes', label: '时长（分钟）', type: 'number', required: true, min: 0, max: 1440 },
+        { key: 'mood', label: '心情（选填）', type: 'select', options: [{ value: '', label: '（不记）' }, { value: 'good', label: '😀 开心' }, { value: 'ok', label: '😐 一般' }, { value: 'bad', label: '😞 不行' }] }
+      ],
+      onDelete: r ? function () { store.remove('fun.records', r.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('fun.records', Object.assign({}, r, { id: r ? r.id : U.uid(), date: v.date, what: v.what, minutes: v.minutes, mood: v.mood || null }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function weeklyModal(w) {
+    App.ui.modal({
+      title: w ? '编辑娱乐时段' : '添加每周固定娱乐',
+      values: w || { weekday: 6, time: '20:00' },
+      fields: [
+        { key: 'weekday', label: '星期', type: 'select', options: WD.map(function (x, i) { return { value: i + 1, label: x }; }) },
+        { key: 'time', label: '时间', type: 'time', required: true },
+        { key: 'what', label: '内容（如：电影夜）', type: 'text', required: true }
+      ],
+      onDelete: w ? function () { store.remove('fun.weekly', w.id); rerender(); } : null,
+      onSubmit: function (v) {
+        store.upsert('fun.weekly', Object.assign({}, w, { id: w ? w.id : U.uid(), weekday: +v.weekday, time: v.time, what: v.what }));
+        rerender();
+        return null;
+      }
+    });
+  }
+
+  function renderRecords(box) {
+    var ui = App.ui;
+    var today = U.today();
+    var recs = store.data.fun.records;
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 记一笔</button></div>');
+    head.querySelector('button').addEventListener('click', function () { recordModal(null); });
+    box.appendChild(head);
+    var cards = D.el('<div class="grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px"></div>');
+    var wm = L.funWeekMinutes(recs, today), mm = L.funMonthMinutes(recs, today);
+    var daysInMonth = +today.slice(8, 10);
+    cards.appendChild(App.ui.statCard('本周合计', U.fmtMinutes(wm)));
+    cards.appendChild(App.ui.statCard('本月合计', U.fmtMinutes(mm)));
+    cards.appendChild(App.ui.statCard('本月日均', U.fmtMinutes(Math.round(mm / daysInMonth)), '和学习打卡对照看看平衡'));
+    box.appendChild(cards);
+    if (!recs.length) { box.appendChild(ui.emptyState('🎮', '还没有娱乐记录', '＋ 记一笔', function () { recordModal(null); })); return; }
+    var tbl = D.el('<table class="tbl"><thead><tr><th>日期</th><th>内容</th><th>时长</th><th>心情</th><th></th></tr></thead><tbody></tbody></table>');
+    var tb = tbl.querySelector('tbody');
+    recs.slice().sort(U.byDateDesc).forEach(function (r) {
+      var tr = D.el('<tr><td>' + r.date + '</td><td>' + U.esc(r.what) + '</td><td>' + U.fmtMinutes(r.minutes) + '</td><td>' + (r.mood ? MOODS[r.mood] : '—') + '</td><td></td></tr>');
+      var td = tr.lastElementChild;
+      td.appendChild(App.comp.iconBtn('✏️', '编辑', function () { recordModal(r); }));
+      td.appendChild(App.comp.iconBtn('🗑', '删除', function () {
+        ui.confirm({ title: '删除记录', text: '删除 ' + r.date + '「' + r.what + '」？', danger: true }).then(function (ok) { if (ok) { store.remove('fun.records', r.id); rerender(); } });
+      }));
+      tb.appendChild(tr);
+    });
+    box.appendChild(tbl);
+  }
+
+  function renderWeekly(box) {
+    var ui = App.ui;
+    var head = D.el('<div class="row" style="justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary">＋ 添加时段</button></div>');
+    head.querySelector('button').addEventListener('click', function () { weeklyModal(null); });
+    box.appendChild(head);
+    var list = store.data.fun.weekly;
+    if (!list.length) { box.appendChild(ui.emptyState('🗓', '还没有每周固定娱乐时段（如：周六晚电影夜）', '＋ 添加时段', function () { weeklyModal(null); })); return; }
+    var grid = D.el('<div class="grid" style="grid-template-columns:repeat(7,1fr)"></div>');
+    for (var wd = 1; wd <= 7; wd++) {
+      var col = D.el('<div class="card" style="padding:8px;min-height:110px;background:var(--bg-soft)"><b class="small">' + WD[wd - 1] + '</b></div>');
+      list.filter(function (w) { return w.weekday === wd; }).sort(function (a, b) { return a.time < b.time ? -1 : 1; }).forEach(function (w) {
+        var chip = D.el('<div style="background:var(--bg-card);border-radius:6px;padding:4px 6px;margin-top:6px;font-size:12px;cursor:pointer"><div class="muted">' + w.time + '</div><div>' + U.esc(w.what) + '</div></div>');
+        chip.addEventListener('click', function () { weeklyModal(w); });
+        col.appendChild(chip);
+      });
+      grid.appendChild(col);
+    }
+    box.appendChild(grid);
+    box.appendChild(D.el('<div class="muted small mt8">这些时段会自动进入「今天玩什么」的抽选池</div>'));
+  }
+
+  function renderPick(box) {
+    var ui = App.ui;
+    var pool = L.buildPickPool(store.data.fun.weekly, store.data.fun.pool);
+    var card = D.el('<div class="card" style="text-align:center;padding:30px"></div>');
+    var nameEl = D.el('<div style="font-size:30px;font-weight:800;min-height:44px" class="pick-name">—</div>');
+    card.appendChild(D.el('<div class="muted small" style="margin-bottom:14px">抽选池共 ' + pool.length + ' 项（每周安排 ' + store.data.fun.weekly.length + ' ＋ 手动 ' + store.data.fun.pool.length + '）</div>'));
+    card.appendChild(nameEl);
+    var btns = D.el('<div class="row mt16" style="justify-content:center"></div>');
+    var spinBtn = D.el('<button class="btn btn-primary" style="font-size:16px;padding:10px 30px">🎲 抽一个</button>');
+    var okBtn = D.el('<button class="btn" disabled>就它了</button>');
+    var againBtn = D.el('<button class="btn" disabled>不满意，重抽</button>');
+    var skipBtn = D.el('<button class="btn" disabled>换一个（跳过）</button>');
+    btns.appendChild(spinBtn); btns.appendChild(okBtn); btns.appendChild(againBtn); btns.appendChild(skipBtn);
+    card.appendChild(btns);
+    box.appendChild(card);
+
+    function spin(exclude) {
+      if (!pool.length) { ui.toast('抽选池是空的，先去「娱乐安排」或下面添加候选', true); return; }
+      pickState.spinning = true;
+      okBtn.disabled = againBtn.disabled = skipBtn.disabled = true;
+      var ticks = 0, total = 14;
+      var timer = setInterval(function () {
+        var rnd = pool[Math.floor(Math.random() * pool.length)];
+        nameEl.textContent = rnd.text;
+        nameEl.style.opacity = ticks % 2 ? '.45' : '1';
+        ticks++;
+        if (ticks > total) {
+          clearInterval(timer);
+          var picked = L.randomPick(pool, exclude);
+          pickState.result = picked;
+          pickState.spinning = false;
+          nameEl.textContent = picked ? picked.text : '（池空）';
+          nameEl.style.opacity = '1';
+          okBtn.disabled = againBtn.disabled = skipBtn.disabled = !picked;
+        }
+      }, 70);
+    }
+    spinBtn.addEventListener('click', function () { pickState.skipped = []; spin([]); });
+    againBtn.addEventListener('click', function () { spin(pickState.skipped); });
+    skipBtn.addEventListener('click', function () {
+      if (pickState.result) pickState.skipped.push(pickState.result.id);
+      spin(pickState.skipped);
+    });
+    okBtn.addEventListener('click', function () {
+      var p = pickState.result;
+      if (!p) return;
+      store.upsert('fun.records', { id: U.uid(), date: U.today(), what: p.text, minutes: 0, mood: null });
+      ui.toast('已预填一条今天的娱乐记录（' + p.text + '），时长可去「时间记录」补');
+      pickState.result = null;
+      rerender();
+    });
+    box.appendChild(card);
+
+    /* 手动候选管理 */
+    var mg = D.el('<div class="card mt16"><b class="small">手动候选池</b><div class="row mt8"><input class="input" placeholder="加一个候选，如：塞尔达、某部电影"><button class="btn btn-small btn-primary">添加</button></div><div class="row mt8" style="flex-wrap:wrap;gap:6px"></div></div>');
+    var chips = mg.querySelector('.row.mt8');
+    function addPool() {
+      var input = mg.querySelector('input');
+      var t = input.value.trim();
+      if (!t) return;
+      store.upsert('fun.pool', { id: U.uid(), text: t });
+      input.value = '';
+      rerender();
+    }
+    mg.querySelector('button').addEventListener('click', addPool);
+    mg.querySelector('input').addEventListener('keydown', function (e) { if (e.key === 'Enter') addPool(); });
+    store.data.fun.pool.forEach(function (p) {
+      var chip = D.el('<span class="tag">' + U.esc(p.text) + '</span>');
+      chip.appendChild(App.comp.iconBtn('✕', '移除候选', function () { store.remove('fun.pool', p.id); rerender(); }));
+      chips.appendChild(chip);
+    });
+    if (!store.data.fun.pool.length) chips.appendChild(D.el('<span class="muted small">暂无手动候选</span>'));
+    box.appendChild(mg);
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">游戏娱乐</h1><p class="page-sub">玩得开心，也留个痕迹</p>'));
+    view.appendChild(App.ui.tabs([
+      { id: 'records', label: '时间记录' }, { id: 'weekly', label: '娱乐安排' }, { id: 'pick', label: '今天玩什么' }
+    ], TAB, function (id) { TAB = id; rerender(); }));
+    var box = D.el('<div></div>');
+    view.appendChild(box);
+    if (TAB === 'records') renderRecords(box);
+    else if (TAB === 'weekly') renderWeekly(box);
+    else renderPick(box);
+  }
+
+  App.shell.registerPage('fun', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+<script>
+/* ==== js/68-settings.js ==== */
+/* 68-settings.js — 数据与设置：数据文件管理、备份恢复、统计、个性化设置、危险操作、使用说明 */
+(function (root, factory) {
+  factory(root.App = root.App || {});
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (App) {
+  'use strict';
+
+  if (typeof document === 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+    return;
+  }
+
+  var U = App.util, D = App.dom, store = App.store;
+  var viewEl = null;
+  function rerender() { if (viewEl) render(viewEl, {}); }
+
+  function counts() {
+    var d = store.data;
+    return [
+      ['备忘', d.memos.length],
+      ['日程', d.plan.events.length],
+      ['待办', d.plan.todos.length],
+      ['每日回顾', Object.keys(d.plan.reviews).length],
+      ['选题', d.media.topics.length],
+      ['发布计划', d.media.schedule.length],
+      ['平台数据', d.media.stats.length],
+      ['开发项目', d.dev.projects.length],
+      ['咨询收入', d.consult.incomes.length],
+      ['学习目标', d.study.goals.length],
+      ['学习打卡', Object.keys(d.study.checkins).length],
+      ['学习时段', d.study.timetable.length],
+      ['阅读条目', d.study.readings.length],
+      ['菜谱', d.diet.recipes.length],
+      ['餐食安排', Object.keys(d.diet.meals).length],
+      ['饮食记录', Object.keys(d.diet.records).length],
+      ['体重记录', d.diet.weights.length],
+      ['娱乐记录', d.fun.records.length],
+      ['娱乐时段', d.fun.weekly.length],
+      ['抽选候选', d.fun.pool.length]
+    ];
+  }
+
+  function tagManager(title, key) {
+    var box = D.el('<div class="card"><b class="small">' + title + '</b><div class="row mt8" style="flex-wrap:wrap;gap:6px"></div>' +
+      '<div class="row mt8"><input class="input" placeholder="添加一项，回车确认"><button class="btn btn-small">添加</button></div></div>');
+    var chips = box.querySelector('.row.mt8');
+    function draw() {
+      chips.innerHTML = '';
+      (store.data.settings[key] || []).forEach(function (t) {
+        var chip = D.el('<span class="tag">' + U.esc(t) + '</span>');
+        chip.appendChild(App.comp.iconBtn('✕', '删除', function () {
+          store.setSetting(key, store.data.settings[key].filter(function (x) { return x !== t; }));
+          rerender();
+        }));
+        chips.appendChild(chip);
+      });
+      if (!(store.data.settings[key] || []).length) chips.appendChild(D.el('<span class="muted small">空</span>'));
+    }
+    draw();
+    function add() {
+      var input = box.querySelector('input');
+      var t = input.value.trim();
+      if (!t) return;
+      var list = store.data.settings[key] || [];
+      if (list.indexOf(t) === -1) store.setSetting(key, list.concat([t]));
+      input.value = '';
+      rerender();
+    }
+    box.querySelector('button').addEventListener('click', add);
+    box.querySelector('input').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+    return box;
+  }
+
+  function render(view) {
+    viewEl = view;
+    App._view = view;
+    var ui = App.ui;
+    var P = App.persist;
+    view.innerHTML = '';
+    view.appendChild(D.el('<h1 class="page-title">数据与设置</h1><p class="page-sub">你的数据在你自己硬盘上，这里管理它</p>'));
+
+    /* 1 数据文件状态卡 */
+    var connected = store.fileConnected();
+    var json = JSON.stringify(store.data);
+    var card = D.el('<div class="card">' +
+      '<div class="row"><b>数据文件</b><span class="tag ' + (connected ? 'tag-on' : '') + '">' + (connected ? '已连接' : '未连接') + '</span></div>' +
+      '<div class="muted small mt8">' + (connected ? '文件：' + U.esc(store.fileName()) : '尚未连接数据文件，当前修改暂存在浏览器缓存中') + '</div>' +
+      '<div class="muted small">数据量约 ' + (json.length / 1024).toFixed(1) + ' KB · 最后保存 ' + U.esc((store.data.savedAt || '—').slice(0, 19).replace('T', ' ')) + '</div>' +
+      '<div class="row mt12" style="flex-wrap:wrap">' +
+      '<button class="btn btn-primary" data-a="connect">' + (connected ? '重新连接' : '连接数据文件') + '</button>' +
+      '<button class="btn" data-a="create">新建数据文件</button>' +
+      '<button class="btn" data-a="backup">立即备份</button>' +
+      '<button class="btn" data-a="restore">恢复…</button>' +
+      '</div><div class="muted small mt8">备份：有能力时自动写入数据文件旁的「备份」文件夹，否则通过浏览器下载保存（建议开启"下载前询问保存位置"）。</div></div>');
+    card.querySelector('[data-a=connect]').addEventListener('click', function () { P.connect(); });
+    card.querySelector('[data-a=create]').addEventListener('click', function () { P.createNew(); });
+    card.querySelector('[data-a=backup]').addEventListener('click', function () { P.backup(); });
+    card.querySelector('[data-a=restore]').addEventListener('click', function () { P.restore(); });
+    view.appendChild(card);
+
+    /* 2 数据统计 */
+    view.appendChild(D.el('<div class="section-title">数据统计</div>'));
+    var tbl = D.el('<table class="tbl"><thead><tr><th>模块数据</th><th style="text-align:right">条数</th></tr></thead><tbody></tbody></table>');
+    var tb = tbl.querySelector('tbody');
+    counts().forEach(function (c) {
+      tb.appendChild(D.el('<tr><td>' + c[0] + '</td><td style="text-align:right"><b>' + c[1] + '</b></td></tr>'));
+    });
+    view.appendChild(tbl);
+
+    /* 3 设置 */
+    view.appendChild(D.el('<div class="section-title">设置</div>'));
+    var setCard = D.el('<div class="card">' +
+      '<div class="row"><span style="width:120px">主题</span><select class="select" style="width:140px" data-s="theme"><option value="light">浅色</option><option value="dark">深色</option></select></div>' +
+      '<div class="row mt12"><span style="width:120px">侧边栏默认收起</span><label class="row small"><input type="checkbox" data-s="sidebar"> 是</label></div></div>');
+    var selTheme = setCard.querySelector('[data-s=theme]');
+    selTheme.value = store.data.settings.theme || 'light';
+    selTheme.addEventListener('change', function () {
+      store.setSetting('theme', selTheme.value);
+      App.shell.applyTheme(selTheme.value);
+    });
+    var chkSb = setCard.querySelector('[data-s=sidebar]');
+    chkSb.checked = !!store.data.settings.sidebarCollapsed;
+    chkSb.addEventListener('change', function () {
+      store.setSetting('sidebarCollapsed', chkSb.checked);
+      App.shell.applySidebar(chkSb.checked);
+    });
+    view.appendChild(setCard);
+    var mgrs = D.el('<div class="grid mt12" style="grid-template-columns:1fr 1fr"></div>');
+    mgrs.appendChild(tagManager('自媒体平台（自媒体模块用）', 'platforms'));
+    mgrs.appendChild(tagManager('菜谱标签（饮食模块用）', 'recipeTags'));
+    view.appendChild(mgrs);
+
+    /* 4 危险操作 */
+    view.appendChild(D.el('<div class="section-title">危险操作</div>'));
+    var danger = D.el('<div class="card" style="border-color:var(--danger)">' +
+      '<div class="row" style="flex-wrap:wrap"><button class="btn" data-a="export">导出全部数据（下载 JSON）</button>' +
+      '<button class="btn btn-danger" data-a="clear">清空全部数据</button></div>' +
+      '<div class="muted small mt8">清空不可撤销（会要求输入确认文字）；清空前建议先导出或备份。</div></div>');
+    danger.querySelector('[data-a=export]').addEventListener('click', function () { P.exportJSON(); });
+    danger.querySelector('[data-a=clear]').addEventListener('click', function () {
+      ui.confirm({
+        title: '清空全部数据', danger: true, okText: '确认清空',
+        text: '这将删除所有模块的全部数据（备忘、计划、收入、打卡……）。\n建议先点「导出全部数据」留底。',
+        requireText: '确认清空'
+      }).then(function (ok) { if (ok) { P.clearAll(); } });
+    });
+    view.appendChild(danger);
+
+    /* 5 使用说明 */
+    view.appendChild(D.el('<div class="section-title">使用说明</div>'));
+    view.appendChild(D.el('<div class="card" style="line-height:1.9;font-size:13px">' +
+      '<b>第一次使用</b>：点「新建数据文件」→ 选一个固定位置保存（建议就放在 APP 文件夹）→ 之后所有修改自动写入它。<br>' +
+      '<b>每次打开</b>：双击 HTML 文件 → 点顶栏「● 未连接」或本页「连接数据文件」→ 选中你的数据文件（浏览器安全规则要求每次授权一次）。<br>' +
+      '<b>忘了连接就改了数据？</b>：不会丢。修改暂存在浏览器里，连接文件后自动合并进去。<br>' +
+      '<b>备份</b>：点「立即备份」生成带日期的副本；换电脑/换浏览器时，用「恢复…」选中备份文件即可完整迁移。<br>' +
+      '<b>注意</b>：数据跟着"这个浏览器"走，请固定用一个浏览器打开本 App；清理浏览器缓存前请先备份。</div>'));
+  }
+
+  App.shell.registerPage('settings', render);
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = (typeof globalThis !== 'undefined' ? globalThis : this).App;
+});
+
+</script>
+</body>
+</html>
