@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的工作生活</title>
+<!--STYLES-->
+</head>
+<body>
+<div id="compat-banner" class="banner banner-error" hidden>
+  当前浏览器不支持本地数据文件读写（需要 Edge 或 Chrome）。可使用「数据与设置」中的导出/导入方式管理数据。
+</div>
+<div id="net-banner" class="banner banner-warn" hidden>
+  <span>⚠ 尚未连接数据文件，修改将暂存浏览器</span>
+  <button id="net-banner-btn" class="btn btn-small btn-primary">立即连接</button>
+</div>
+<div id="layout">
+  <aside id="sidebar">
+    <div id="sidebar-head">
+      <span id="logo">🗂️</span>
+      <span id="app-name">我的工作生活</span>
+    </div>
+    <nav id="nav"></nav>
+    <button id="sidebar-toggle" class="btn btn-ghost btn-small" title="收起/展开侧边栏">⇔</button>
+  </aside>
+  <div id="main">
+    <header id="topbar">
+      <span id="top-date"></span>
+      <span class="spacer"></span>
+      <span id="save-state" class="save-state" title="保存状态">—</span>
+      <button id="file-state" class="file-state file-state-off" title="数据文件状态">● 未连接</button>
+      <button id="theme-toggle" class="btn btn-ghost btn-small" title="切换深浅色主题">🌙</button>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+<!--SCRIPTS-->
+</body>
+</html>

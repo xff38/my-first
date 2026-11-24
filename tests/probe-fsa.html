@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>probe</title></head>
+<body>
+<pre id="out">running...</pre>
+<script>
+(function () {
+  var lines = [];
+  function rec(k, v) { lines.push(k + ' = ' + v); }
+  try {
+    rec('userAgent', navigator.userAgent);
+    rec('isSecureContext', String(window.isSecureContext));
+    rec('showOpenFilePicker', typeof window.showOpenFilePicker);
+    rec('showSaveFilePicker', typeof window.showSaveFilePicker);
+    rec('showDirectoryPicker', typeof window.showDirectoryPicker);
+    rec('FileSystemFileHandle', typeof window.FileSystemFileHandle);
+    rec('indexedDB', typeof window.indexedDB);
+    rec('localStorage', typeof window.localStorage);
+    try { localStorage.setItem('probe', '1'); rec('localStorage.write', localStorage.getItem('probe')); } catch (e) { rec('localStorage.write', 'ERR ' + e.message); }
+    try {
+      var req = indexedDB.open('probe-db', 1);
+      req.onsuccess = function () { rec('indexedDB.open', 'OK'); finish(); };
+      req.onerror = function () { rec('indexedDB.open', 'ERR'); finish(); };
+      setTimeout(function () { rec('indexedDB.open', 'TIMEOUT'); finish(); }, 2000);
+    } catch (e) { rec('indexedDB.open', 'EXC ' + e.message); finish(); }
+  } catch (e) {
+    rec('fatal', e.message);
+  }
+  var done = false;
+  function finish() {
+    if (done) return; done = true;
+    document.getElementById('out').textContent = lines.join('\n');
+  }
+  setTimeout(finish, 2500);
+})();
+</script>
+</body>
+</html>

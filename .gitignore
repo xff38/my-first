@@ -1,0 +1,21 @@
+# 操作系统 / 编辑器垃圾文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+
+# 临时目录与日志
+.tmp/
+*.log
+
+# 若将来引入 Node 依赖，不纳入版本库
+node_modules/
+
+# 浏览器冒烟用的临时副本（如再次生成）
+tests/cache-bust.html
+
+# App 运行时个人数据与备份（个人记录，不纳入版本库）
+我的数据.json
+我的数据-*.json
+备份/
+恢复前快照-*.json
